@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+account=${1:-$USER}
+case "$account" in level[1-9]|level10) ;; *) echo "Refusing unexpected account: $account" >&2; exit 2 ;; esac
+run="/home/$account/runtime"
+[ -f "$run/registry" ] || exit 0
+account_uid=$(id -u "$account")
+
+safe_pid() {
+    pid=$1
+    [ -r "/proc/$pid/status" ] || return 1
+    owner=$(awk '/^Uid:/ {print $2; exit}' "/proc/$pid/status")
+    [ "$owner" = "$account_uid" ]
+}
+
+# Signal individual recorded processes. Descendants are listed by the helper.
+awk '{print $2}' "$run/registry" | while read -r pid; do
+    case "$pid" in *[!0-9]*|'') ;; *) safe_pid "$pid" && kill -TERM "$pid" 2>/dev/null || true ;; esac
+done
+sleep 1
+awk '{print $2}' "$run/registry" | while read -r pid; do
+    case "$pid" in *[!0-9]*|'') ;; *) safe_pid "$pid" && kill -KILL "$pid" 2>/dev/null || true ;; esac
+done
+exit 0
