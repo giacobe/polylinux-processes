@@ -42,15 +42,13 @@ done
 mkdir -p /home /var/lib/process-lab/cases /usr/lib/process-lab
 chmod 755 /var/lib/process-lab /var/lib/process-lab/cases /usr/lib/process-lab
 
-echo "Building process helper"
-if [ -x "$INSTALL_ROOT/process-helper" ]; then
+echo "Installing process helper"
+if [ -f "$INSTALL_ROOT/process-helper" ]; then
     cp "$INSTALL_ROOT/process-helper" /usr/lib/process-lab/process-helper
+    chmod 755 /usr/lib/process-lab/process-helper
 else
-    PROCESS_CC=${CC:-cc}
-    command_required "$PROCESS_CC"
-    "$PROCESS_CC" -O2 -Wall -Wextra -o /usr/lib/process-lab/process-helper "$INSTALL_ROOT/process-helper.c"
+    die "prebuilt process-helper is missing from the exercise payload"
 fi
-chmod 755 /usr/lib/process-lab/process-helper
 cp "$INSTALL_ROOT/startlevel.sh" /usr/lib/process-lab/startlevel.sh
 chmod 644 /usr/lib/process-lab/startlevel.sh
 
