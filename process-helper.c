@@ -33,7 +33,10 @@ static void append_file(const char *name, const char *fmt, ...) {
     va_end(ap);
     fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd >= 0) {
-        if (n > 0) (void)write(fd, line, (size_t)n);
+        if (n > 0) {
+            ssize_t written = write(fd, line, (size_t)n);
+            (void)written;
+        }
         close(fd);
     }
 }

@@ -1,4 +1,4 @@
-# PolyLinux Processes and Job Control
+# PolyLinux Processes and Job Control — Evidence-Graded Edition
 
 This package builds ten deterministic, live process-management exercises for
 the PolyLinux Buildroot image. Each student receives different themes, process
@@ -11,6 +11,12 @@ SHA-256(email + ISO_date + exercise_password + level_password)
 PIDs are deliberately not seeded. `startlevel` launches a fresh runtime from
 the deterministic case specification, and `checklevel` validates the resulting
 live state.
+
+Each level also creates a learner-visible evidence artifact and a stable
+semantic answer. The evidence answer excludes live PIDs and PGIDs, can be
+recovered independently by `verify.sh`, and can be reproduced by the Microsoft
+365 grader from the same seed. Canonical answers are stored root-only under
+`/var/lib/process-lab/answers`.
 
 ## Installation
 
@@ -55,4 +61,6 @@ CPU activity is bounded to a single helper, all identities carry a
 level-specific token, and cleanup uses the recorded process registry. No real
 system service is targeted.
 
-See `LEVELS.md` for the curriculum and `TOOLSET.md` for image requirements.
+See `LEVELS.md` for the live and evidence-grading contracts,
+`participant-guide.md` for the browser instructions, and `TOOLSET.md` for image
+requirements.

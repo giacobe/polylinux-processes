@@ -39,8 +39,11 @@ for cmd in adduser awk basename cat chmod chown cp cut date grep head id kill \
     command_required "$cmd"
 done
 
-mkdir -p /home /var/lib/process-lab/cases /usr/lib/process-lab
+mkdir -p /home /var/lib/process-lab/cases /var/lib/process-lab/answers /usr/lib/process-lab
 chmod 755 /var/lib/process-lab /var/lib/process-lab/cases /usr/lib/process-lab
+chmod 700 /var/lib/process-lab/answers
+ANSWER_DIR=/var/lib/process-lab/answers
+export ANSWER_DIR
 
 echo "Installing process helper"
 if [ -f "$INSTALL_ROOT/process-helper" ]; then

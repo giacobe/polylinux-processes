@@ -1,25 +1,32 @@
 # Level design
 
-| Level | Scenario | Hash-derived variation | Verified result |
+The live process objective and the externally graded evidence answer are
+separate. `checklevel` supplies formative feedback about live state; the
+Microsoft 365 grader evaluates the stable semantic answer.
+
+| Level | Live objective | Evidence artifact | Exact answer shape |
 |---|---|---|---|
-| 1 | Process roll call | theme, target role, token, distractor count | correct live `PID|PPID|STATE` |
-| 2 | Graceful shutdown | role, receipt filename, distractors | target exited by TERM, receipt present, peers alive |
-| 3 | Stubborn worker | role, ignored signal, final signal | ignored signal tested, correct shutdown, peers alive |
-| 4 | Pause and resume | role, heartbeat filename and interval | CONT observed, target running, peers preserved |
-| 5 | Shell jobs | two role names and target states | first job stopped, second running |
-| 6 | Resource hog | hidden target role, worker count, required nice | CPU worker alive at required niceness |
-| 7 | Process tree | parent, target branch, protected branch, fanout | target branch gone, protected branch alive |
-| 8 | Process groups | group labels and stage count | complete target group gone, protected group alive |
-| 9 | Zombie | parent/child roles and control signal | parent reaped zombie and remains alive |
-| 10 | Incident response | all roles, group label, nice value | mixed remediation state completed |
+| 1 | Identify an assigned process | `process-inventory.txt` | `role|worker-id|state-class` |
+| 2 | Terminate one worker gracefully | `shutdown-policy.txt` | `role|signal|receipt-name|protected-count` |
+| 3 | Test an ignored signal and escalate | `signal-policy.txt` | `role|ignored-signal|final-signal` |
+| 4 | Stop and continue a heartbeat worker | `heartbeat-policy.txt` | `role|stop-signal|continue-signal|heartbeat-name` |
+| 5 | Set two shell-job states | `job-policy.txt` | `stopped-role|T|background-role|S` |
+| 6 | Reprioritize the CPU-heavy worker | `scheduling-snapshot.txt` | `role|nice-value|lower-priority` |
+| 7 | Remove one process-tree branch | `process-tree.txt` | `parent-role|target-branch|child-count|protected-branch` |
+| 8 | Terminate one process group | `process-groups.txt` | `target-label|member-count|TERM|protected-label` |
+| 9 | Cause a parent to reap a zombie | `zombie-snapshot.txt` | `zombie-role|parent-role|control-signal|reap` |
+| 10 | Restore a mixed process incident | `incident-evidence.txt` | `hog@nice;paused@CONT;group@TERM;stubborn@TERM>KILL;protected@KEEP` |
 
 ## Generator invariants
 
-- Correct targets and required states are derived before distractors.
-- Labeled sub-hashes independently select theme, names, behavior, and layout.
-- Live PIDs are discovered after launch and never treated as deterministic.
-- Target and distractor identities cannot collide.
-- Every runtime writes a registry containing label, PID, PPID, and PGID.
-- Verification checks protected processes as well as requested targets.
-- Reset, navigation, and reinstall clean up recorded processes.
-- No level requires root privileges.
+- The exact seed bytes are
+  `email + ISO_date + exercise_password + level_password`.
+- Labeled SHA-256 sub-hashes independently select themes, roles, behaviors,
+  filenames, counts, identities, and required values.
+- Live PIDs and PGIDs never appear in an external answer.
+- The canonical answer is generated before distractors and stored root-only.
+- Learner-visible evidence contains every fact needed by the reference solver.
+- The reference solver reads evidence rather than the seed or protected answer.
+- Identical seed inputs reproduce identical evidence and answers.
+- Changing the learner identity changes the intended seeded properties.
+- Protected live workers are checked as well as requested target processes.

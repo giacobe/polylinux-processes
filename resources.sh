@@ -52,7 +52,12 @@ level_begin() {
     printf 'LEVEL=%s\nTHEME=%s\nTOKEN=%s\n' "$levelnumber" "$THEME" "$TOKEN" > "$LEVEL_DIR/case.conf"
 }
 
-conf() { printf '%s=%s\n' "$1" "$2" >> "$LEVEL_DIR/case.conf"; }
+conf() {
+    case "$2" in
+        *"'"*) die "configuration values may not contain a single quote" ;;
+    esac
+    printf "%s='%s'\n" "$1" "$2" >> "$LEVEL_DIR/case.conf"
+}
 
 role_at() {
     _offset=$1
@@ -75,10 +80,28 @@ write_level_readme() {
         echo "************************************************************************"
         printf '%s\n' "$1"
         echo
+        echo "External evidence answer:"
+        echo "Inspect the files under evidence/ and submit the fields in the exact"
+        echo "order shown on the FORMAT line. Preserve case and punctuation."
+        echo
         echo "Run 'startlevel' to create or reset this level's processes."
-        echo "Run 'checklevel' after completing the requested actions."
+        echo "Run 'checklevel' for formative feedback after the live actions."
+        echo "The external grader evaluates the evidence answer independently."
         echo "Run 'levelstatus' for the current process identifiers and launch status."
     } > "$LEVEL_HOME/README.txt"
+}
+
+record_answer() {
+    printf '%s\n' "$1" > "$ANSWER_DIR/$levelToBuild"
+    chmod 600 "$ANSWER_DIR/$levelToBuild"
+}
+
+evidence_file() {
+    printf '%s/evidence/%s\n' "$LEVEL_HOME" "$1"
+}
+
+prepare_evidence() {
+    mkdir -p "$LEVEL_HOME/evidence"
 }
 
 level_finish() {
@@ -88,13 +111,147 @@ level_finish() {
         chown -R "$levelToBuild:$levelToBuild" "$LEVEL_HOME"
         chown -R root:root "$LEVEL_DIR"
         chmod 700 "$LEVEL_HOME"
+        find "$LEVEL_HOME/evidence" -type d -exec chmod 700 {} \; 2>/dev/null || true
+        find "$LEVEL_HOME/evidence" -type f -exec chmod 600 {} \; 2>/dev/null || true
         chmod 755 "$LEVEL_DIR"
         chmod 644 "$LEVEL_DIR/case.conf"
     fi
 }
 
+write_evidence_and_answer() {
+    prepare_evidence
+    # Reload the generated case as the evidence writer's input. The canonical
+    # answer is recorded separately in the root-only answer directory.
+    . "$LEVEL_DIR/case.conf"
+    case "$levelnumber" in
+        1)
+            worker_id="wrk-$(hex_fragment worker-target 8)"
+            {
+                echo "FORMAT role|worker-id|state-class"
+                echo "ASSIGNMENT fingerprint=$TOKEN"
+                printf 'PROCESS role=%s worker_id=%s fingerprint=%s state_class=sleeping\n' \
+                    "$TARGET" "$worker_id" "$TOKEN"
+                i=1
+                while [ "$i" -le "$DISTRACTORS" ]; do
+                    printf 'PROCESS role=decoy-%d worker_id=wrk-%s fingerprint=%s state_class=sleeping\n' \
+                        "$i" "$(hex_fragment "worker-decoy-$i" 8)" "$(hex_fragment "decoy-fingerprint-$i" 10)"
+                    i=$((i + 1))
+                done
+            } > "$(evidence_file process-inventory.txt)"
+            record_answer "$TARGET|$worker_id|sleeping"
+            ;;
+        2)
+            {
+                echo "FORMAT role|signal|receipt-name|protected-count"
+                printf 'POLICY role=%s shutdown=graceful accepted_signal=TERM receipt=%s\n' "$TARGET" "$RECEIPT"
+                i=1
+                while [ "$i" -le "$DISTRACTORS" ]; do
+                    printf 'PEER role=peer-%d protection=preserve\n' "$i"
+                    i=$((i + 1))
+                done
+            } > "$(evidence_file shutdown-policy.txt)"
+            record_answer "$TARGET|TERM|$RECEIPT|$DISTRACTORS"
+            ;;
+        3)
+            {
+                echo "FORMAT role|ignored-signal|final-signal"
+                printf 'WORKER role=%s behavior=ignores-%s escalation=%s\n' \
+                    "$TARGET" "$IGNORED_SIGNAL" "$REQUIRED_SIGNAL"
+                i=1
+                while [ "$i" -le "$DISTRACTORS" ]; do
+                    printf 'WORKER role=peer-%d behavior=normal protection=preserve\n' "$i"
+                    i=$((i + 1))
+                done
+            } > "$(evidence_file signal-policy.txt)"
+            record_answer "$TARGET|$IGNORED_SIGNAL|$REQUIRED_SIGNAL"
+            ;;
+        4)
+            {
+                echo "FORMAT role|stop-signal|continue-signal|heartbeat-name"
+                printf 'HEARTBEAT role=%s file=%s interval=%s required_cycle=STOP,CONT\n' \
+                    "$TARGET" "$HEARTBEAT" "$INTERVAL"
+                i=1
+                while [ "$i" -le "$DISTRACTORS" ]; do
+                    printf 'PEER role=peer-%d protection=preserve\n' "$i"
+                    i=$((i + 1))
+                done
+            } > "$(evidence_file heartbeat-policy.txt)"
+            record_answer "$TARGET|STOP|CONT|$HEARTBEAT"
+            ;;
+        5)
+            {
+                echo "FORMAT stopped-role|stopped-state|background-role|background-state"
+                printf 'JOB role=%s required_state=stopped canonical_state=T\n' "$JOB_A"
+                printf 'JOB role=%s required_state=running-background canonical_state=S\n' "$JOB_B"
+            } > "$(evidence_file job-policy.txt)"
+            record_answer "$JOB_A|T|$JOB_B|S"
+            ;;
+        6)
+            {
+                echo "FORMAT role|nice-value|scheduling-effect"
+                printf 'SAMPLE role=%s cpu_class=highest required_nice=%s effect=lower-priority\n' \
+                    "$TARGET" "$REQUIRED_NICE"
+                i=1
+                while [ "$i" -le "$DISTRACTORS" ]; do
+                    printf 'SAMPLE role=worker-%d cpu_class=idle required_action=preserve\n' "$i"
+                    i=$((i + 1))
+                done
+            } > "$(evidence_file scheduling-snapshot.txt)"
+            record_answer "$TARGET|$REQUIRED_NICE|lower-priority"
+            ;;
+        7)
+            {
+                echo "FORMAT parent-role|target-branch|child-count|protected-branch"
+                printf 'NODE role=%s relation=root\n' "$PARENT"
+                printf 'NODE role=%s relation=target-branch parent=%s children=%s\n' \
+                    "$TARGET_BRANCH" "$PARENT" "$CHILDREN"
+                i=1
+                while [ "$i" -le "$CHILDREN" ]; do
+                    printf 'NODE role=%s-child%d relation=child parent=%s\n' \
+                        "$TARGET_BRANCH" "$i" "$TARGET_BRANCH"
+                    i=$((i + 1))
+                done
+                printf 'NODE role=%s relation=protected-branch parent=%s children=%s\n' \
+                    "$PROTECTED_BRANCH" "$PARENT" "$CHILDREN"
+            } > "$(evidence_file process-tree.txt)"
+            record_answer "$PARENT|$TARGET_BRANCH|$CHILDREN|$PROTECTED_BRANCH"
+            ;;
+        8)
+            {
+                echo "FORMAT target-label|member-count|signal|protected-label"
+                printf 'GROUP label=%s members=%s action=TERM\n' "$TARGET_GROUP" "$STAGES"
+                printf 'GROUP label=%s members=%s action=preserve\n' "$PROTECTED_GROUP" "$STAGES"
+            } > "$(evidence_file process-groups.txt)"
+            record_answer "$TARGET_GROUP|$STAGES|TERM|$PROTECTED_GROUP"
+            ;;
+        9)
+            {
+                echo "FORMAT zombie-role|parent-role|control-signal|resolution"
+                printf 'PROCESS role=%s state=Z parent=%s\n' "$ZOMBIE" "$PARENT"
+                printf 'PROCESS role=%s state=S control_signal=%s responsibility=wait\n' \
+                    "$PARENT" "$CONTROL_SIGNAL"
+                echo "PROCESS role=live-sibling state=S protection=preserve"
+            } > "$(evidence_file zombie-snapshot.txt)"
+            record_answer "$ZOMBIE|$PARENT|$CONTROL_SIGNAL|reap"
+            ;;
+        10)
+            {
+                echo "FORMAT hog@nice;paused@CONT;group@TERM;stubborn@TERM>KILL;protected@KEEP"
+                printf 'OBJECT role=%s condition=cpu-heavy action=renice value=%s\n' "$HOG" "$REQUIRED_NICE"
+                printf 'OBJECT role=%s condition=stopped action=CONT\n' "$PAUSED"
+                printf 'OBJECT role=%s condition=process-group action=TERM\n' "$TARGET_GROUP"
+                printf 'OBJECT role=%s condition=ignores-TERM action=TERM>KILL\n' "$STUBBORN"
+                printf 'OBJECT role=%s condition=protected action=KEEP\n' "$PROTECTED"
+            } > "$(evidence_file incident-evidence.txt)"
+            record_answer "$HOG@$REQUIRED_NICE;$PAUSED@CONT;$TARGET_GROUP@TERM;$STUBBORN@TERM>KILL;$PROTECTED@KEEP"
+            ;;
+        *) die "cannot write evidence for level $levelnumber" ;;
+    esac
+}
+
 build_level() {
     n=$1
+    levelnumber=$n
     level_begin
     case "$n" in
         1)
@@ -213,5 +370,6 @@ Use ps/top to discover identities; do not assume launch order."
             ;;
         *) die "unknown level $n" ;;
     esac
+    write_evidence_and_answer
     level_finish
 }
