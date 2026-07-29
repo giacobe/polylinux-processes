@@ -29,20 +29,20 @@ _pl_worker() {
 case "$LEVEL" in
     1)
         _pl_worker "$TARGET" normal
-        _pl_i=1; while [ "$_pl_i" -le "$DISTRACTORS" ]; do _pl_worker "decoy-$_pl_i" normal; _pl_i=$((_pl_i+1)); done
+        for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
         ;;
     2)
         _pl_worker "$TARGET" graceful 1 "$RECEIPT"
-        _pl_i=1; while [ "$_pl_i" -le "$DISTRACTORS" ]; do _pl_worker "peer-$_pl_i" normal; _pl_i=$((_pl_i+1)); done
+        for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
         ;;
     3)
         case "$IGNORED_SIGNAL" in TERM) _pl_mode=ignore-term ;; INT) _pl_mode=ignore-int ;; *) _pl_mode=ignore-hup ;; esac
         _pl_worker "$TARGET" "$_pl_mode"
-        _pl_i=1; while [ "$_pl_i" -le "$DISTRACTORS" ]; do _pl_worker "peer-$_pl_i" normal; _pl_i=$((_pl_i+1)); done
+        for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
         ;;
     4)
         _pl_worker "$TARGET" heartbeat "$INTERVAL"
-        _pl_i=1; while [ "$_pl_i" -le "$DISTRACTORS" ]; do _pl_worker "peer-$_pl_i" normal; _pl_i=$((_pl_i+1)); done
+        for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
         ;;
     5)
         _pl_worker "$JOB_A" normal
@@ -50,7 +50,7 @@ case "$LEVEL" in
         ;;
     6)
         _pl_worker "$TARGET" cpu
-        _pl_i=1; while [ "$_pl_i" -le "$DISTRACTORS" ]; do _pl_worker "worker-$_pl_i" normal; _pl_i=$((_pl_i+1)); done
+        for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
         ;;
     7)
         "$_pl_helper" tree "$_pl_run" "$PARENT" "$TARGET_BRANCH" "$PROTECTED_BRANCH" "$CHILDREN" "$TOKEN" >>"$_pl_run/output" 2>&1 &

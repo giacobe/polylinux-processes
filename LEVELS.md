@@ -1,32 +1,35 @@
 # Level design
 
-The live process objective and the externally graded evidence answer are
-separate. `checklevel` supplies formative feedback about live state; the
-Microsoft 365 grader evaluates the stable semantic answer.
+Every level requires examination or manipulation of actual running processes.
+`submit` emits a live-state snapshot only after `checklevel` confirms the
+requested result.
 
-| Level | Live objective | Evidence artifact | Exact answer shape |
-|---|---|---|---|
-| 1 | Identify an assigned process | `process-inventory.txt` | `role|worker-id|state-class` |
-| 2 | Terminate one worker gracefully | `shutdown-policy.txt` | `role|signal|receipt-name|protected-count` |
-| 3 | Test an ignored signal and escalate | `signal-policy.txt` | `role|ignored-signal|final-signal` |
-| 4 | Stop and continue a heartbeat worker | `heartbeat-policy.txt` | `role|stop-signal|continue-signal|heartbeat-name` |
-| 5 | Set two shell-job states | `job-policy.txt` | `stopped-role|T|background-role|S` |
-| 6 | Reprioritize the CPU-heavy worker | `scheduling-snapshot.txt` | `role|nice-value|lower-priority` |
-| 7 | Remove one process-tree branch | `process-tree.txt` | `parent-role|target-branch|child-count|protected-branch` |
-| 8 | Terminate one process group | `process-groups.txt` | `target-label|member-count|TERM|protected-label` |
-| 9 | Cause a parent to reap a zombie | `zombie-snapshot.txt` | `zombie-role|parent-role|control-signal|reap` |
-| 10 | Restore a mixed process incident | `incident-evidence.txt` | `hog@nice;paused@CONT;group@TERM;stubborn@TERM>KILL;protected@KEEP` |
+| Level | Live objective | Submission verifier requirement |
+|---|---|---|
+| 1 | Identify an assigned process | Submitted PID, PPID, and state match the target's live process row |
+| 2 | Terminate one worker gracefully | Target is absent, receipt exists, and every protected worker remains |
+| 3 | Test an ignored signal and escalate | Target is absent, ignored-signal event exists, and protected workers remain |
+| 4 | Stop and continue a heartbeat worker | Target is alive and not stopped, CONT is recorded, and protected workers remain |
+| 5 | Set two shell-job states | Assigned stopped job is `T`; assigned background job remains live and not `T` |
+| 6 | Reprioritize the CPU-heavy worker | Target remains live at the required nice value |
+| 7 | Remove one process-tree branch | Every target-branch process is absent and the protected branch remains |
+| 8 | Terminate one process group | Every target-group member is absent and the protected group remains |
+| 9 | Cause a parent to reap a zombie | Zombie is absent, parent remains, and the reap event exists |
+| 10 | Restore a mixed process incident | Priority, resumed state, group shutdown, escalation, and preservation all match |
 
-## Generator invariants
+## Submission invariants
 
-- The exact seed bytes are
+- The scenario is seeded from
   `email + ISO_date + exercise_password + level_password`.
-- Labeled SHA-256 sub-hashes independently select themes, roles, behaviors,
-  filenames, counts, identities, and required values.
-- Live PIDs and PGIDs never appear in an external answer.
-- The canonical answer is generated before distractors and stored root-only.
-- Learner-visible evidence contains every fact needed by the reference solver.
-- The reference solver reads evidence rather than the seed or protected answer.
-- Identical seed inputs reproduce identical evidence and answers.
-- Changing the learner identity changes the intended seeded properties.
-- Protected live workers are checked as well as requested target processes.
+- Realistic service roles are selected without target/distractor collisions.
+- PIDs and PGIDs come from the current Linux runtime.
+- The snapshot is sorted by service role so incidental launch order does not
+  affect record order.
+- Learner identity, date, level, theme, and launch token are inside the hashed
+  bytes.
+- Process rows come from current `/proc`/`ps` state and are cross-checked
+  against the current user's UID and launch token.
+- A failed `checklevel` produces no submission digest.
+- The verifier recomputes SHA-256 before interpreting any process records.
+- The old learner-readable `evidence/` directories are not generated.
+

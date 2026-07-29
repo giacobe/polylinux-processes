@@ -1,0 +1,85 @@
+#!/bin/sh
+set -eu
+
+number=${USER#level}
+case "$number" in
+    1|2|3|4|5|6|7|8|9|10) ;;
+    *) echo "submit must be run from a level account." >&2; exit 2 ;;
+esac
+
+run="$HOME/runtime"
+case_file="/var/lib/process-lab/cases/level$number/case.conf"
+[ -r "$case_file" ] || { echo "Case configuration is missing." >&2; exit 2; }
+[ -r "$run/registry" ] || { echo "Run startlevel first." >&2; exit 2; }
+. "$case_file"
+
+if [ "$number" -eq 1 ]; then
+    [ "$#" -eq 1 ] || {
+        echo "Usage: submit PID|PPID|STATE" >&2
+        exit 2
+    }
+    assertion=$1
+    checklevel "$assertion" >/dev/null
+else
+    [ "$#" -eq 0 ] || { echo "Usage: submit" >&2; exit 2; }
+    checklevel >/dev/null
+fi
+
+tmp="$HOME/.process-submit.$$"
+out="$HOME/submission-level$number.txt"
+trap 'rm -f "$tmp"' EXIT HUP INT TERM
+
+{
+    echo "POLYLINUX-PROCESS-SNAPSHOT|1"
+    printf 'LEARNER|%s\n' "$LEARNER_ID"
+    printf 'DATE|%s\n' "$EXERCISE_DATE"
+    printf 'LEVEL|%s\n' "$number"
+    printf 'THEME|%s\n' "$THEME"
+    printf 'LAUNCH|%s\n' "$TOKEN"
+    if [ "$number" -eq 1 ]; then
+        printf 'ASSERTION|%s\n' "$assertion"
+    fi
+
+    sort -k1,1 "$run/registry" |
+        while read -r label pid recorded_ppid recorded_pgid; do
+            case "$pid" in
+                *[!0-9]*|'') continue ;;
+            esac
+
+            if [ -r "/proc/$pid/status" ] && [ -r "/proc/$pid/cmdline" ]; then
+                uid=$(awk '/^Uid:/ {print $2; exit}' "/proc/$pid/status")
+                owner_uid=$(id -u)
+                cmdline=$(tr '\000' ' ' < "/proc/$pid/cmdline")
+                if [ "$uid" = "$owner_uid" ] &&
+                    printf '%s\n' "$cmdline" | grep -F -q "$TOKEN"; then
+                    row=$(ps -o ppid=,pgid=,stat=,ni=,comm= -p "$pid" |
+                        awk 'NF >= 5 {print $1 "|" $2 "|" substr($3,1,1) "|" $4 "|" $5; exit}')
+                    if [ -n "$row" ]; then
+                        printf 'PROCESS|%s|%s|%s|token=match\n' "$label" "$pid" "$row"
+                        continue
+                    fi
+                fi
+            fi
+
+            printf 'PROCESS|%s|%s|%s|%s|X|-|-|token=absent\n' \
+                "$label" "$pid" "$recorded_ppid" "$recorded_pgid"
+        done
+
+    if [ -r "$run/events" ]; then
+        sed 's/^/EVENT|/' "$run/events" | sort
+    fi
+    for receipt in "$run"/shutdown-*.log; do
+        [ -r "$receipt" ] || continue
+        receipt_name=$(basename "$receipt")
+        awk -v name="$receipt_name" '{print "RECEIPT|" name "|" $0}' "$receipt" | sort
+    done
+    echo "END|POLYLINUX-PROCESS-SNAPSHOT"
+} > "$tmp"
+
+digest=$(sha256sum "$tmp" | awk '{print $1}')
+{
+    cat "$tmp"
+    printf 'SHA256|%s\n' "$digest"
+} > "$out"
+chmod 600 "$out"
+cat "$out"

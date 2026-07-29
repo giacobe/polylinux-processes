@@ -4,7 +4,7 @@ Installation and generation require:
 
 ```text
 adduser awk basename cat chmod chown cp cut date grep head id kill ln mkdir
-mv nice passwd ps renice rm sed sha256sum sleep su tail tr wc
+mv nice passwd ps renice rm sed sha256sum sleep sort su tail tr wc
 ```
 
 Learners use:

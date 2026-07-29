@@ -6,7 +6,6 @@ form_url: ""
 
 ---
 
-## START: PolyLinux Processes
 # PolyLinux Processes and Job Control
 
 In this lab you will inspect and manage live Linux processes. Each level
@@ -42,20 +41,6 @@ Read the generated briefing before doing anything:
 cat README.txt
 ```
 
-Each briefing also identifies a learner-visible evidence file. Its first line
-states the exact answer format. Inspect the evidence with commands such as:
-
-```sh
-find evidence -type f -maxdepth 1
-cat evidence/FILENAME
-grep PATTERN evidence/FILENAME
-awk 'EXPRESSION' evidence/FILENAME
-```
-
-Your external answer uses stable roles, labels, signals, counts, filenames, and
-states. Do not submit a PID or PGID: those identifiers change when a level is
-reset and cannot be independently reproduced by the grader.
-
 Then launch the level:
 
 ```sh
@@ -81,6 +66,22 @@ checklevel
 
 Level 1 is the exception: it requires an answer argument described in its
 briefing.
+
+After `checklevel` reports completion, capture the live process state:
+
+```sh
+submit
+```
+
+For Level 1, supply the same quoted PID, PPID, and state assertion:
+
+```sh
+submit 'PID|PPID|STATE'
+```
+
+The command prints and saves `submission-levelN.txt`. Its SHA-256 covers the
+learner identity, exercise date, launch identifier, process rows, states,
+priority values, and relevant runtime events.
 
 ## Safety Rules
 
@@ -226,29 +227,25 @@ For example:
 renice 12 -p 731
 ```
 
-The BusyBox `ps` in this image does not provide the `ni` output column or the
-`-p` selection option. Use `top` to inspect niceness. The level checker reads
-the authoritative value from `/proc`.
+This image provides procps-ng `ps`, including the `ni` column and `-p`
+selection used by the level checker and submission snapshot.
 
 ## General Workflow
 
 At every level:
 
 1. Read `README.txt`.
-2. Inspect the named file under `evidence/`.
-3. Record the semantic answer in the exact format shown by its `FORMAT` line.
-4. Run `startlevel`.
-5. Inspect all relevant processes before acting.
-6. Write down any temporary PID, PPID, or PGID needed for the live action.
-7. Perform the narrowest requested action.
-8. Inspect the process table again.
-9. Run `checklevel` for formative feedback.
-10. Submit the stable evidence answer through the external form.
+2. Run `startlevel`.
+3. Inspect all relevant processes before acting.
+4. Write down any temporary PID, PPID, or PGID needed for the live action.
+5. Perform the narrowest requested action.
+6. Inspect the process table again.
+7. Run `checklevel`.
+8. When it passes, run `submit` to create the hashed live-state report.
 
-The VM checker evaluates the live practice state but does not reveal an answer
-or a completion code. The external grader independently reconstructs the
-expected evidence answer from your learner identity, exercise date, and the
-protected exercise configuration.
+The VM does not generate a report for an incomplete state. Preserve the entire
+`submission-levelN.txt` file: the final SHA-256 protects the exact preceding
+blob.
 
 Move between levels with:
 
@@ -751,6 +748,6 @@ Each level is complete only when `checklevel` prints:
 Level complete.
 ```
 
-For external credit, also submit the evidence answer for each level through the
-linked Microsoft Form. Preserve capitalization, punctuation, separators, and
-field order exactly as shown by the evidence file's `FORMAT` line.
+Preserve each `submission-levelN.txt` file for collection or external
+verification. The Microsoft 365 intake must be updated to accept the snapshot
+blob and digest; the previous short evidence-answer fields are obsolete.

@@ -29,7 +29,9 @@ case "$LEVEL" in
     2)
         pid=$(pid_for "$TARGET"); ! alive "$pid" || fail "$TARGET is still running"
         grep -q "role=$TARGET .*signal=15 clean=yes" "$run/$RECEIPT" 2>/dev/null || fail "no graceful TERM receipt was recorded"
-        awk '$1 ~ /^peer-/ {print $2}' "$run/registry" | while read -r p; do alive "$p" || exit 7; done || fail "a protected peer was stopped"
+        for role in $DISTRACTOR_ROLES; do
+            p=$(pid_for "$role"); alive "$p" || fail "protected worker $role was stopped"
+        done
         pass ;;
     3)
         pid=$(pid_for "$TARGET"); ! alive "$pid" || fail "$TARGET is still running"
@@ -38,12 +40,17 @@ case "$LEVEL" in
         if [ "$REQUIRED_SIGNAL" = TERM ]; then
             grep -q "$TARGET .*signal=15" "$run/events" 2>/dev/null || fail "TERM was not used for the final shutdown"
         fi
-        awk '$1 ~ /^peer-/ {print $2}' "$run/registry" | while read -r p; do alive "$p" || exit 7; done || fail "a protected peer was stopped"
+        for role in $DISTRACTOR_ROLES; do
+            p=$(pid_for "$role"); alive "$p" || fail "protected worker $role was stopped"
+        done
         pass ;;
     4)
         pid=$(pid_for "$TARGET"); alive "$pid" || fail "$TARGET is no longer running"
         [ "$(state_of "$pid")" != T ] || fail "$TARGET is still stopped"
         grep -q "signal=CONT" "$run/events" 2>/dev/null || fail "no stop/continue cycle was observed"
+        for role in $DISTRACTOR_ROLES; do
+            p=$(pid_for "$role"); alive "$p" || fail "protected worker $role was stopped"
+        done
         pass ;;
     5)
         a=$(pid_for "$JOB_A"); b=$(pid_for "$JOB_B")

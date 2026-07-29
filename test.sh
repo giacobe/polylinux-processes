@@ -43,7 +43,6 @@ done
 
 # Confirm deterministic reproduction for a representative case and answer.
 before_case=$(sha256sum "$CASE_ROOT/level6/case.conf" | awk '{print $1}')
-before_evidence=$(sha256sum "$HOME_ROOT/level6/evidence/scheduling-snapshot.txt" | awk '{print $1}')
 before_answer=$(sed -n '1p' "$ANSWER_DIR/level6")
 levelnumber=6
 levelToBuild=level6
@@ -54,13 +53,45 @@ level_HASH=$(printf '%s%s%s%s' "$USER_ID" "$currentDate" \
 export levelnumber levelToBuild LEVEL_HOME levelPassword level_HASH
 sh "$INSTALL_ROOT/level6.sh"
 after_case=$(sha256sum "$CASE_ROOT/level6/case.conf" | awk '{print $1}')
-after_evidence=$(sha256sum "$HOME_ROOT/level6/evidence/scheduling-snapshot.txt" | awk '{print $1}')
 after_answer=$(sed -n '1p' "$ANSWER_DIR/level6")
 [ "$before_case" = "$after_case" ]
-[ "$before_evidence" = "$after_evidence" ]
 [ "$before_answer" = "$after_answer" ]
 
-HOME_ROOT="$HOME_ROOT" ANSWER_DIR="$ANSWER_DIR" sh "$INSTALL_ROOT/verify.sh"
+# Learners must not receive the previous precomputed evidence shortcut.
+[ ! -d "$HOME_ROOT/level1/evidence" ]
+[ ! -d "$HOME_ROOT/level10/evidence" ]
+if grep -R -E 'role=(decoy|peer|worker)-[0-9]+' "$CASE_ROOT" "$HOME_ROOT" >/dev/null 2>&1; then
+    echo "obvious numbered distractor name found" >&2
+    exit 1
+fi
+
+# Exercise the submission integrity and semantic verifier with a synthetic
+# Level 1 live-state snapshot.
+. "$CASE_ROOT/level1/case.conf"
+submission="$test_root/submission-level1.txt"
+blob="$test_root/submission-level1.blob"
+{
+    echo "POLYLINUX-PROCESS-SNAPSHOT|1"
+    printf 'LEARNER|%s\n' "$LEARNER_ID"
+    printf 'DATE|%s\n' "$EXERCISE_DATE"
+    printf 'LEVEL|%s\n' "$LEVEL"
+    printf 'THEME|%s\n' "$THEME"
+    printf 'LAUNCH|%s\n' "$TOKEN"
+    echo "ASSERTION|321|100|S"
+    printf 'PROCESS|%s|321|100|321|S|0|%s|token=match\n' "$TARGET" "$TARGET"
+    echo "END|POLYLINUX-PROCESS-SNAPSHOT"
+} > "$blob"
+{
+    cat "$blob"
+    printf 'SHA256|%s\n' "$(sha256sum "$blob" | awk '{print $1}')"
+} > "$submission"
+sh "$INSTALL_ROOT/verify-submission.sh" "$CASE_ROOT/level1/case.conf" "$submission" >/dev/null
+sed 's/ASSERTION|321|100|S/ASSERTION|999|100|S/' "$submission" > "$submission.tampered"
+if sh "$INSTALL_ROOT/verify-submission.sh" "$CASE_ROOT/level1/case.conf" \
+    "$submission.tampered" >/dev/null 2>&1; then
+    echo "tampered submission unexpectedly passed" >&2
+    exit 1
+fi
 
 original_level1=$(sed -n '1p' "$ANSWER_DIR/level1")
 variation_root="$test_root/variation"
@@ -81,7 +112,7 @@ changed_level1=$(sed -n '1p' "$ANSWER_DIR/level1")
 [ "$original_level1" != "$changed_level1" ]
 
 if [ "$compiled" = yes ]; then
-    echo "Generator, variation, solver, and helper compilation tests passed."
+    echo "Generator, variation, snapshot verifier, tamper detection, and helper compilation tests passed."
 else
-    echo "Generator, variation, and solver tests passed (helper compilation skipped)."
+    echo "Generator, variation, snapshot verifier, and tamper detection tests passed (helper compilation skipped)."
 fi

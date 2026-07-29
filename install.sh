@@ -35,7 +35,7 @@ fi
 export USER_ID
 
 for cmd in adduser awk basename cat chmod chown cp cut date grep head id kill \
-    ln mkdir mkfifo mv nice passwd ps renice rm sed sha256sum sleep su tail tr wc; do
+    ln mkdir mkfifo mv nice passwd ps renice rm sed sha256sum sleep sort su tail tr wc; do
     command_required "$cmd"
 done
 
@@ -56,7 +56,7 @@ cp "$INSTALL_ROOT/startlevel.sh" /usr/lib/process-lab/startlevel.sh
 chmod 644 /usr/lib/process-lab/startlevel.sh
 
 cp "$INSTALL_ROOT/profile" /etc/profile
-for command_file in nextlevel prevlevel checklevel levelstatus cleanlevel; do
+for command_file in nextlevel prevlevel checklevel levelstatus cleanlevel submit; do
     cp "$INSTALL_ROOT/$command_file" "/usr/bin/$command_file"
     chmod 755 "/usr/bin/$command_file"
 done

@@ -28,15 +28,15 @@ hex_fragment() { derive_hex "$1" | cut -c "1-$2"; }
 theme_field() {
     case "$1:$2" in
         0:name) echo observatory ;;
-        0:roles) echo "star-tracker image-stacker weather-sampler catalog-uploader orbit-monitor archive-writer" ;;
+        0:roles) echo "star-tracker image-stacker weather-sampler catalog-uplink orbit-monitor archive-writer dome-controller guide-camera focus-monitor time-beacon sky-indexer mirror-control" ;;
         1:name) echo greenhouse ;;
-        1:roles) echo "soil-reader pump-controller humidity-exporter climate-monitor harvest-logger valve-worker" ;;
+        1:roles) echo "soil-reader pump-controller humidity-probe climate-monitor harvest-logger valve-worker nutrient-mixer vent-controller mist-scheduler lamp-monitor bed-scanner drain-sensor" ;;
         2:name) echo research-vessel ;;
-        2:roles) echo "sonar-reader route-recorder telemetry-uploader depth-monitor sample-indexer deck-sensor" ;;
+        2:roles) echo "sonar-reader route-recorder telemetry-link depth-monitor sample-indexer deck-sensor ballast-control current-probe winch-monitor chart-writer salinity-probe engine-sampler" ;;
         3:name) echo print-farm ;;
-        3:roles) echo "job-router layer-renderer printer-monitor spool-writer material-reader queue-worker" ;;
+        3:roles) echo "job-router layer-renderer printer-monitor spool-writer material-reader queue-worker nozzle-control bed-calibrator resin-monitor fan-controller plate-scanner motion-planner" ;;
         4:name) echo media-archive ;;
-        4:roles) echo "catalog-scanner thumbnail-worker metadata-writer ingest-monitor index-builder checksum-reader" ;;
+        4:roles) echo "catalog-scan thumb-worker metadata-write ingest-monitor index-builder checksum-read proxy-builder media-probe frame-extract audio-indexer rights-checker archive-mover" ;;
         *) die "unknown theme field $1:$2" ;;
     esac
 }
@@ -49,7 +49,9 @@ level_begin() {
     THEME=$(theme_field "$theme_index" name)
     ROLES=$(theme_field "$theme_index" roles)
     TOKEN=$(hex_fragment identity 10)
-    printf 'LEVEL=%s\nTHEME=%s\nTOKEN=%s\n' "$levelnumber" "$THEME" "$TOKEN" > "$LEVEL_DIR/case.conf"
+    case "$USER_ID" in *"'"*) die "learner identity may not contain a single quote" ;; esac
+    printf "LEVEL='%s'\nTHEME='%s'\nTOKEN='%s'\nLEARNER_ID='%s'\nEXERCISE_DATE='%s'\n" \
+        "$levelnumber" "$THEME" "$TOKEN" "$USER_ID" "$currentDate" > "$LEVEL_DIR/case.conf"
 }
 
 conf() {
@@ -72,6 +74,24 @@ role_from_index() {
     eval "printf '%s\n' \"\${$_wanted}\""
 }
 
+distractor_roles() {
+    _target=$1 _count=$2 _label=$3
+    set -- $ROLES
+    _total=$#
+    _start=$(( $(hex_byte "$(derive_hex "$_label")" 0) % _total ))
+    _names=
+    _offset=0
+    while [ "$_count" -gt 0 ]; do
+        _candidate=$(role_from_index "$((_start + _offset))")
+        _offset=$((_offset + 1))
+        [ "$_candidate" = "$_target" ] && continue
+        case " $_names " in *" $_candidate "*) continue ;; esac
+        _names="${_names}${_names:+ }$_candidate"
+        _count=$((_count - 1))
+    done
+    printf '%s\n' "$_names"
+}
+
 write_level_readme() {
     {
         echo "* Exercise date : $currentDate"
@@ -80,13 +100,10 @@ write_level_readme() {
         echo "************************************************************************"
         printf '%s\n' "$1"
         echo
-        echo "External evidence answer:"
-        echo "Inspect the files under evidence/ and submit the fields in the exact"
-        echo "order shown on the FORMAT line. Preserve case and punctuation."
-        echo
         echo "Run 'startlevel' to create or reset this level's processes."
         echo "Run 'checklevel' for formative feedback after the live actions."
-        echo "The external grader evaluates the evidence answer independently."
+        echo "Run 'submit' after checklevel passes to capture and hash live state."
+        echo "Level 1 uses: submit 'PID|PPID|STATE'."
         echo "Run 'levelstatus' for the current process identifiers and launch status."
     } > "$LEVEL_HOME/README.txt"
 }
@@ -255,8 +272,9 @@ build_level() {
     level_begin
     case "$n" in
         1)
-            target=$(role_at 0); conf TARGET "$target"
-            conf DISTRACTORS "$((4 + $(hex_byte "$(derive_hex count)" 0) % 4))"
+            target=$(role_at 0); count="$((4 + $(hex_byte "$(derive_hex count)" 0) % 4))"
+            conf TARGET "$target"; conf DISTRACTORS "$count"
+            conf DISTRACTOR_ROLES "$(distractor_roles "$target" "$count" level1-roster)"
             conf REQUIRED_FIELDS "pid|ppid|state"
             write_level_readme "PROCESS ROLL CALL
 Locate the process whose command contains role=$target and token=$TOKEN.
@@ -267,6 +285,7 @@ Useful commands: ps, grep."
         2)
             target=$(role_at 1); receipt="shutdown-$(hex_fragment receipt 6).log"
             conf TARGET "$target"; conf RECEIPT "$receipt"; conf DISTRACTORS 4
+            conf DISTRACTOR_ROLES "$(distractor_roles "$target" 4 level2-roster)"
             write_level_readme "GRACEFUL SHUTDOWN
 The $target worker must be shut down cleanly. Identify it from its role and
 token=$TOKEN, then send the normal termination signal. Do not stop its peers.
@@ -282,6 +301,7 @@ Useful commands: ps, kill."
                 *) ignored=HUP; required=TERM ;;
             esac
             conf TARGET "$target"; conf IGNORED_SIGNAL "$ignored"; conf REQUIRED_SIGNAL "$required"; conf DISTRACTORS 4
+            conf DISTRACTOR_ROLES "$(distractor_roles "$target" 4 level3-roster)"
             write_level_readme "THE STUBBORN WORKER
 The $target worker ignores $ignored. Stop that worker while preserving all
 peers. The required final escalation is $required. Verify that an ordinary
@@ -292,6 +312,7 @@ Useful commands: ps, kill, kill -l."
             target=$(role_at 3); heartbeat="heartbeat-$(hex_fragment heartbeat 6).log"
             conf TARGET "$target"; conf HEARTBEAT "$heartbeat"; conf INTERVAL "$((1 + $(hex_byte "$(derive_hex interval)" 0) % 3))"
             conf REQUIRED "stop-then-continue"; conf DISTRACTORS 3
+            conf DISTRACTOR_ROLES "$(distractor_roles "$target" 3 level4-roster)"
             write_level_readme "PAUSE AND RESUME
 Temporarily stop $target, confirm its state becomes T and its heartbeat pauses,
 then continue it. It must be running when checked. Preserve its peers.
@@ -311,6 +332,7 @@ Useful commands: jobs, fg, Ctrl-Z, bg, kill."
         6)
             target=$(role_at 5); nice=$((8 + $(hex_byte "$(derive_hex niceness)" 0) % 8))
             conf TARGET "$target"; conf REQUIRED_NICE "$nice"; conf DISTRACTORS 4
+            conf DISTRACTOR_ROLES "$(distractor_roles "$target" 4 level6-roster)"
             write_level_readme "CONTROL THE RESOURCE HOG
 Observe the workers and identify the one consuming the most CPU. Its role is
 not disclosed by the briefing. Lower its scheduling priority by setting its
@@ -371,5 +393,9 @@ Use ps/top to discover identities; do not assume launch order."
         *) die "unknown level $n" ;;
     esac
     write_evidence_and_answer
+    # The previous grader edition exposed a precomputed evidence directory in
+    # each learner home. Keep only the root-owned canonical answer; submissions
+    # are now generated from live runtime state by /usr/bin/submit.
+    rm -rf "$LEVEL_HOME/evidence"
     level_finish
 }
