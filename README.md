@@ -86,3 +86,26 @@ CPU activity is bounded to one helper, identities carry a level-specific launch
 token, and cleanup uses the recorded process roster. No real system service is
 targeted.
 
+## Build the browser VM
+
+This lab uses the `basic-processes` configuration from
+[`giacobe/buildroot-builder2`](https://github.com/giacobe/buildroot-builder2),
+validated with Buildroot `2025.02.15`:
+
+```sh
+git clone https://github.com/giacobe/buildroot-builder2.git
+cd buildroot-builder2
+BUILDROOT_VERSION=2025.02.15 scripts/01-setup-buildroot.sh
+scripts/02-build-baseline.sh --config basic-processes
+scripts/03-package-payload.sh \
+  --repo https://github.com/giacobe/polylinux-processes.git \
+  --ref main \
+  --baseline artifacts/basic-processes-<timestamp> \
+  --output artifacts/polylinux-processes \
+  --output-prefix polylinux-processes
+```
+
+Replace `<timestamp>` with the stage-2 artifact directory. In addition to the
+manifest check, verify the `ps`, `top`, `nice`, and `renice` behavior described
+in `TOOLSET.md`, then boot-test the exact generated image pair in v86.
+
