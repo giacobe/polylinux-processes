@@ -129,10 +129,10 @@ level_finish() {
     fi
 }
 
-write_evidence_and_answer() {
+write_evidence() {
     prepare_evidence
-    # Reload the generated case as the evidence writer's input. The canonical
-    # answer is recorded separately in the root-only answer directory.
+    # Reload the generated case as the evidence writer's input. Learners derive
+    # and submit answers from the live process state; no answer key is stored.
     . "$LEVEL_DIR/case.conf"
     case "$levelnumber" in
         1)
@@ -376,10 +376,9 @@ Use ps/top to discover identities; do not assume launch order."
             ;;
         *) die "unknown level $n" ;;
     esac
-    write_evidence_and_answer
-    # The previous grader edition exposed a precomputed evidence directory in
-    # each learner home. Keep only the root-owned canonical answer; submissions
-    # are now generated from live runtime state by /usr/bin/submit.
+    write_evidence
+    # The live process exercise uses case.conf plus processes started by
+    # startlevel. Remove construction-only evidence before handing off.
     rm -rf "$LEVEL_HOME/evidence"
     level_finish
 }
