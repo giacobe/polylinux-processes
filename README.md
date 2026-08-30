@@ -22,7 +22,7 @@ ps -o pid,ppid,pgid,stat,ni,comm,args
 ```
 
 The learner inspects and manipulates the real processes, then runs
-`checklevel`. Once the requested live state is correct, `submit` captures a
+`the external answer form`. Once the requested live state is correct, `submit` captures a
 canonical report from `/proc`, runtime events, and shutdown receipts.
 
 The report includes:
@@ -64,7 +64,7 @@ an external signing service or hardware-backed secret.
 Place the repository files in root's home directory and run:
 
 ```sh
-chmod +x install.sh level*.sh checklevel cleanlevel levelstatus nextlevel \
+chmod +x install.sh level*.sh the external answer form cleanlevel levelstatus nextlevel \
   prevlevel submit verify.sh verify-submission.sh
 ./install.sh
 ```
@@ -109,3 +109,9 @@ Replace `<timestamp>` with the stage-2 artifact directory. In addition to the
 manifest check, verify the `ps`, `top`, `nice`, and `renice` behavior described
 in `TOOLSET.md`, then boot-test the exact generated image pair in v86.
 
+
+## Standard runtime contract
+
+The current release uses the reversible PolyBandit exercise code, the versioned `seed-v1` deterministic seed, ten concurrent level generators, staged `README.txt` readiness, unrestricted `nextlevel`/`prevlevel` navigation, and no client-side answer store or checker. See `lab.json` for the authoritative level count, theme policy, Buildroot configuration, and browser artifact names.
+
+Do not rebuild the assigned Buildroot baseline merely to package this lab. Package the repository payload into the configuration named by `buildroot_configuration`, preserve the baseline kernel, and publish the resulting `packaged.bzImage` and `packaged.rootfs.cpio.gz`.

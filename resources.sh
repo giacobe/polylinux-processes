@@ -45,9 +45,8 @@ level_begin() {
     LEVEL_DIR="${CASE_ROOT:-/var/lib/process-lab/cases}/$levelToBuild"
     rm -rf "$LEVEL_DIR"
     mkdir -p "$LEVEL_DIR"
-    theme_index=$(( $(hex_byte "$(derive_hex theme)" 0) % 5 ))
-    THEME=$(theme_field "$theme_index" name)
-    ROLES=$(theme_field "$theme_index" roles)
+    THEME=$(theme_field title)
+    ROLES="$(theme_variant system 1) $(theme_variant service 2) $(theme_variant host 3) $(theme_variant asset 4) $(theme_variant event 5) $(theme_variant project 6) $(theme_variant system 7) $(theme_variant service 8) $(theme_variant host 9) $(theme_variant asset 10) $(theme_variant event 11) $(theme_variant project 12)"
     TOKEN=$(hex_fragment identity 10)
     case "$USER_ID" in *"'"*) die "learner identity may not contain a single quote" ;; esac
     printf "LEVEL='%s'\nTHEME='%s'\nTOKEN='%s'\nLEARNER_ID='%s'\nEXERCISE_DATE='%s'\n" \
@@ -101,16 +100,10 @@ write_level_readme() {
         printf '%s\n' "$1"
         echo
         echo "Run 'startlevel' to create or reset this level's processes."
-        echo "Run 'checklevel' for formative feedback after the live actions."
-        echo "Run 'submit' after checklevel passes to capture and hash live state."
-        echo "Level 1 uses: submit 'PID|PPID|STATE'."
+        echo "Submit the requested answer through the external answer form."
+        echo "Level 1 answer format: PID|PPID|STATE."
         echo "Run 'levelstatus' for the current process identifiers and launch status."
     } > "$LEVEL_HOME/README.txt"
-}
-
-record_answer() {
-    printf '%s\n' "$1" > "$ANSWER_DIR/$levelToBuild"
-    chmod 600 "$ANSWER_DIR/$levelToBuild"
 }
 
 evidence_file() {
@@ -155,7 +148,6 @@ write_evidence_and_answer() {
                     i=$((i + 1))
                 done
             } > "$(evidence_file process-inventory.txt)"
-            record_answer "$TARGET|$worker_id|sleeping"
             ;;
         2)
             {
@@ -167,7 +159,6 @@ write_evidence_and_answer() {
                     i=$((i + 1))
                 done
             } > "$(evidence_file shutdown-policy.txt)"
-            record_answer "$TARGET|TERM|$RECEIPT|$DISTRACTORS"
             ;;
         3)
             {
@@ -180,7 +171,6 @@ write_evidence_and_answer() {
                     i=$((i + 1))
                 done
             } > "$(evidence_file signal-policy.txt)"
-            record_answer "$TARGET|$IGNORED_SIGNAL|$REQUIRED_SIGNAL"
             ;;
         4)
             {
@@ -193,7 +183,6 @@ write_evidence_and_answer() {
                     i=$((i + 1))
                 done
             } > "$(evidence_file heartbeat-policy.txt)"
-            record_answer "$TARGET|STOP|CONT|$HEARTBEAT"
             ;;
         5)
             {
@@ -201,7 +190,6 @@ write_evidence_and_answer() {
                 printf 'JOB role=%s required_state=stopped canonical_state=T\n' "$JOB_A"
                 printf 'JOB role=%s required_state=running-background canonical_state=S\n' "$JOB_B"
             } > "$(evidence_file job-policy.txt)"
-            record_answer "$JOB_A|T|$JOB_B|S"
             ;;
         6)
             {
@@ -214,7 +202,6 @@ write_evidence_and_answer() {
                     i=$((i + 1))
                 done
             } > "$(evidence_file scheduling-snapshot.txt)"
-            record_answer "$TARGET|$REQUIRED_NICE|lower-priority"
             ;;
         7)
             {
@@ -231,7 +218,6 @@ write_evidence_and_answer() {
                 printf 'NODE role=%s relation=protected-branch parent=%s children=%s\n' \
                     "$PROTECTED_BRANCH" "$PARENT" "$CHILDREN"
             } > "$(evidence_file process-tree.txt)"
-            record_answer "$PARENT|$TARGET_BRANCH|$CHILDREN|$PROTECTED_BRANCH"
             ;;
         8)
             {
@@ -239,7 +225,6 @@ write_evidence_and_answer() {
                 printf 'GROUP label=%s members=%s action=TERM\n' "$TARGET_GROUP" "$STAGES"
                 printf 'GROUP label=%s members=%s action=preserve\n' "$PROTECTED_GROUP" "$STAGES"
             } > "$(evidence_file process-groups.txt)"
-            record_answer "$TARGET_GROUP|$STAGES|TERM|$PROTECTED_GROUP"
             ;;
         9)
             {
@@ -249,7 +234,6 @@ write_evidence_and_answer() {
                     "$PARENT" "$CONTROL_SIGNAL"
                 echo "PROCESS role=live-sibling state=S protection=preserve"
             } > "$(evidence_file zombie-snapshot.txt)"
-            record_answer "$ZOMBIE|$PARENT|$CONTROL_SIGNAL|reap"
             ;;
         10)
             {
@@ -260,7 +244,6 @@ write_evidence_and_answer() {
                 printf 'OBJECT role=%s condition=ignores-TERM action=TERM>KILL\n' "$STUBBORN"
                 printf 'OBJECT role=%s condition=protected action=KEEP\n' "$PROTECTED"
             } > "$(evidence_file incident-evidence.txt)"
-            record_answer "$HOG@$REQUIRED_NICE;$PAUSED@CONT;$TARGET_GROUP@TERM;$STUBBORN@TERM>KILL;$PROTECTED@KEEP"
             ;;
         *) die "cannot write evidence for level $levelnumber" ;;
     esac
@@ -279,7 +262,7 @@ build_level() {
             write_level_readme "PROCESS ROLL CALL
 Locate the process whose command contains role=$target and token=$TOKEN.
 Submit its live PID, PPID, and one-letter process state:
-    checklevel PID|PPID|STATE
+    PID|PPID|STATE
 Useful commands: ps, grep."
             ;;
         2)
@@ -326,7 +309,7 @@ Useful commands: ps, kill, tail."
             write_level_readme "FOREGROUND AND BACKGROUND JOBS
 startlevel launches $a and $b as jobs in your current interactive shell.
 Use jobs to inspect them. Stop $a and leave it stopped; leave $b running in
-the background. checklevel validates both job processes.
+the background. Record the requested states for the external answer form.
 Useful commands: jobs, fg, Ctrl-Z, bg, kill."
             ;;
         6)

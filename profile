@@ -11,7 +11,7 @@ echo "************************************************************************"
 echo "* PolyLinux Processes and Job Control                                  *"
 echo "* Inspect and manage disposable exercise processes.                    *"
 echo "* Read README.txt, then run startlevel.                                 *"
-echo "* Use checklevel when finished; move with nextlevel and prevlevel.      *"
+echo "* Use the external answer form when finished; move with nextlevel and prevlevel.      *"
 echo "************************************************************************"
 echo "* Level: $USER"
 cat README.txt

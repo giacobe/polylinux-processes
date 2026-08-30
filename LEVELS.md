@@ -1,7 +1,7 @@
 # Level design
 
 Every level requires examination or manipulation of actual running processes.
-`submit` emits a live-state snapshot only after `checklevel` confirms the
+`submit` emits a live-state snapshot only after `the external answer form` confirms the
 requested result.
 
 | Level | Live objective | Submission verifier requirement |
@@ -29,7 +29,7 @@ requested result.
   bytes.
 - Process rows come from current `/proc`/`ps` state and are cross-checked
   against the current user's UID and launch token.
-- A failed `checklevel` produces no submission digest.
+- A failed `the external answer form` produces no submission digest.
 - The verifier recomputes SHA-256 before interpreting any process records.
 - The old learner-readable `evidence/` directories are not generated.
 

@@ -25,7 +25,7 @@ Useful commands include:
 | Bring a job forward | `fg %N` |
 | Change priority | `renice VALUE -p PID` |
 | Reset the case | `startlevel` |
-| Check the result | `checklevel` |
+| Check the result | `the external answer form` |
 
 Do not use broad commands such as `killall sh`. Each case includes protected
 processes, and only processes belonging to the exercise are in scope.

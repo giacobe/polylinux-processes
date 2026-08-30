@@ -61,13 +61,13 @@ invalid.
 When you believe the requested state is complete, run:
 
 ```sh
-checklevel
+the external answer form
 ```
 
 Level 1 is the exception: it requires an answer argument described in its
 briefing.
 
-After `checklevel` reports completion, capture the live process state:
+After `the external answer form` reports completion, capture the live process state:
 
 ```sh
 submit
@@ -240,7 +240,7 @@ At every level:
 4. Write down any temporary PID, PPID, or PGID needed for the live action.
 5. Perform the narrowest requested action.
 6. Inspect the process table again.
-7. Run `checklevel`.
+7. Run `the external answer form`.
 8. When it passes, run `submit` to create the hashed live-state report.
 
 The VM does not generate a report for an incomplete state. Preserve the entire
@@ -288,7 +288,7 @@ Replace `ROLE` with the generated role from `README.txt`.
 Submit the fields in this exact order:
 
 ```sh
-checklevel 'PID|PPID|STATE'
+the external answer form 'PID|PPID|STATE'
 ```
 
 Use only the first letter from `STAT`. The quotation marks protect the pipe
@@ -332,7 +332,7 @@ cat runtime/RECEIPT-FILENAME
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
 Force-killing the target will not create a valid graceful-shutdown receipt.
@@ -377,7 +377,7 @@ different ignored signal.
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
 The checker verifies that the assigned ignored signal was actually tested.
@@ -420,7 +420,7 @@ Confirm that its state is no longer `T`.
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
 ## Level 5: Foreground and Background Jobs
@@ -470,10 +470,10 @@ jobs -l
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
-Do not exit the shell between `startlevel` and `checklevel`; the jobs belong to
+Do not exit the shell between `startlevel` and `the external answer form`; the jobs belong to
 that interactive shell.
 
 ## Level 6: Control the Resource Hog
@@ -506,7 +506,7 @@ Return to `top` if you want to confirm the `NI` value.
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
 Do not terminate the CPU-heavy worker; the required repair is reprioritization.
@@ -546,7 +546,7 @@ similar names because the protected branch uses the same overall helper.
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
 The checker requires the complete target branch to be gone and the complete
@@ -587,7 +587,7 @@ The leading minus sign means “process group 812,” not “PID 812.”
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
 The target group's members must be gone and every protected-group member must
@@ -627,7 +627,7 @@ live sibling remain.
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
 ## Level 10: Process Incident Response
@@ -677,15 +677,15 @@ exists.
 ### Check
 
 ```sh
-checklevel
+the external answer form
 ```
 
 The checker reports the first incomplete objective it finds. Correct it and
-run `checklevel` again.
+run `the external answer form` again.
 
 ## Troubleshooting
 
-### `checklevel` says to run `startlevel`
+### `the external answer form` says to run `startlevel`
 
 The current level has no active runtime:
 
@@ -742,7 +742,7 @@ You may revisit any earlier level:
 prevlevel
 ```
 
-Each level is complete only when `checklevel` prints:
+Each level is complete only when `the external answer form` prints:
 
 ```text
 Level complete.

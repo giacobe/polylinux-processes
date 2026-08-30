@@ -1,23 +1,22 @@
 #!/bin/sh
 set -eu
-
-cd "$(dirname "$0")"
-CASE_ROOT=${CASE_ROOT:-/var/lib/process-lab/cases}
-SUBMISSION_ROOT=${SUBMISSION_ROOT:-/home}
-failures=0
-
-n=1
-while [ "$n" -le 10 ]; do
-    case_file="$CASE_ROOT/level$n/case.conf"
-    submission="$SUBMISSION_ROOT/level$n/submission-level$n.txt"
-    if sh ./verify-submission.sh "$case_file" "$submission"; then
-        :
-    else
-        failures=$((failures + 1))
+root=${1:-/}
+failed=0
+for level in 1 2 3 4 5 6 7 8 9 10; do
+    home="$root/home/level$level"
+    if [ ! -f "$home/README.txt" ]; then
+        echo "level$level: README.txt missing" >&2
+        failed=1
     fi
-    n=$((n + 1))
 done
-
-[ "$failures" -eq 0 ] || exit 1
-echo "All live-state submissions passed."
-
+for forbidden in \
+    "$root/answers" \
+    "$root/root/answers" \
+    "$root/var/lib/process-lab/answers"; do
+    if [ -e "$forbidden" ]; then
+        echo "forbidden client-side answer store: $forbidden" >&2
+        failed=1
+    fi
+done
+[ "$failed" -eq 0 ]
+echo 'Packaged level structure contains no lab answer store.'
