@@ -1,4 +1,5 @@
 #!/bin/sh
+. "$INSTALL_ROOT/polylinux-common.sh"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 command_required() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"; }
@@ -93,7 +94,7 @@ distractor_roles() {
 
 write_level_readme() {
     {
-        echo "* Exercise date : $currentDate"
+        echo "* Exercise code : $EXERCISE_CODE"
         echo "* Learner       : $USER_ID"
         echo "* Theme         : $THEME"
         echo "************************************************************************"
@@ -382,3 +383,6 @@ Use ps/top to discover identities; do not assume launch order."
     rm -rf "$LEVEL_HOME/evidence"
     level_finish
 }
+
+# Override the legacy catalog above with the shared themes-v1 catalog.
+. "$INSTALL_ROOT/polylinux-common.sh"
