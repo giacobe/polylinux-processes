@@ -5,12 +5,12 @@ cd "$HOME" || exit 1
 startlevel() {
     . /usr/lib/process-lab/startlevel.sh
 }
-
 clear
-echo "************************************************************************"
-echo "* PolyLinux Processes and Job Control                                  *"
-echo "* Inspect and manage disposable exercise processes.                    *"
-echo "* Read README.txt, then run startlevel.                                 *"
-echo "* Use the external answer form when finished; move with nextlevel and prevlevel.      *"
-echo "************************************************************************"
+box_line() { printf '* %-36.36s *\n' "$1"; }
+echo '****************************************'
+box_line 'PolyLinux: Processes/Job Control'
+box_line 'Read README, then run startlevel.'
+box_line 'Use the exercise grading form.'
+box_line 'Use nextlevel and prevlevel.'
+echo '****************************************'
 cat README.txt

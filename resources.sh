@@ -94,10 +94,6 @@ distractor_roles() {
 
 write_level_readme() {
     {
-        echo "* Exercise code : $EXERCISE_CODE"
-        echo "* Learner       : $USER_ID"
-        echo "* Theme         : $THEME"
-        echo "************************************************************************"
         printf '%s\n' "$1"
         echo
         echo "Run 'startlevel' to create or reset this level's processes."
