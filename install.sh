@@ -48,7 +48,7 @@ export THEME_OFFSET THEME_STEP
 
 for cmd in adduser awk basename cat chmod chown cp cut date grep head id kill ln mkdir mkfifo mv nice passwd ps renice rm sed sha256sum sleep sort su tail tr wc; do command_required "$cmd"; done
 
-mkdir -p /home /var/lib/process-lab/cases /usr/lib/process-lab
+mkdir -p /home /var/lib/process-lab/cases /usr/lib/process-lab /etc/profile.d
 if [ -f "$INSTALL_ROOT/process-helper" ]; then
     cp "$INSTALL_ROOT/process-helper" /usr/lib/process-lab/process-helper
     chmod 755 /usr/lib/process-lab/process-helper
@@ -58,6 +58,8 @@ fi
 cp "$INSTALL_ROOT/startlevel.sh" /usr/lib/process-lab/startlevel.sh
 chmod 644 /usr/lib/process-lab/startlevel.sh
 
+cp "$INSTALL_ROOT/polylinux-colors.sh" /etc/profile.d/polylinux-colors.sh
+chmod 644 /etc/profile.d/polylinux-colors.sh
 cp "$INSTALL_ROOT/profile" /etc/profile
 for helper in nextlevel prevlevel; do
     cp "$INSTALL_ROOT/$helper" "/usr/bin/$helper"
