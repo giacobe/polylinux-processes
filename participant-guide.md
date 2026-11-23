@@ -59,16 +59,12 @@ Run `startlevel` again if you need to reset the current level. Resetting stops
 the old exercise processes and creates new ones, so all previous PIDs become
 invalid.
 
-When you believe the requested state is complete, run:
+When you believe the requested state is complete, use the exercise grading
+form. The submission link is not yet configured on this page.
 
-```sh
-the external answer form
-```
+Level 1 asks for the live `PID|PPID|STATE` fields described in its briefing.
 
-Level 1 is the exception: it requires an answer argument described in its
-briefing.
-
-After `the external answer form` reports completion, capture the live process state:
+After completing the live process work, capture the state with:
 
 ```sh
 submit
