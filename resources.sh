@@ -98,9 +98,9 @@ write_level_readme() {
         echo
         echo "Run 'startlevel' to create or reset this level's processes."
         if [ "$levelnumber" -eq 1 ]; then
-            echo "Record the target's current PID|PPID|STATE."
+            echo "Run 'validate PID' with the target's current PID and record the printed key."
         else
-            echo "Record the observations requested above."
+            echo "When finished, run 'validate' and record the printed key."
         fi
         echo "Run 'levelstatus' for the current process identifiers and launch status."
     } > "$LEVEL_HOME/README.txt"
@@ -280,14 +280,28 @@ build_level() {
             conf REQUIRED_FIELDS "pid|ppid|state"
             write_level_readme "PROCESS ROLL CALL
 Locate the process whose command contains role=$target and token=$TOKEN.
-Record its live PID, PPID, and one-letter process state:
-    PID|PPID|STATE
+Pass its live PID to 'validate PID' to obtain a submission key.
 Useful commands: ps, grep."
             ;;
         2)
             target=$(role_at 1); receipt="shutdown-$(hex_fragment receipt 6).log"
             conf TARGET "$target"; conf RECEIPT "$receipt"; conf DISTRACTORS 4
-            conf DISTRACTOR_ROLES "$(distractor_roles "$target" 4 level2-roster)"
+            decoy_roles=$(distractor_roles "$target" 4 level2-roster)
+            conf DISTRACTOR_ROLES "$decoy_roles"
+            decoy_entries=; i=1
+            for decoy_role in $decoy_roles; do
+                decoy_entries="${decoy_entries}${decoy_entries:+ }$decoy_role:$(hex_fragment "level2-decoy-$i" 10)"
+                i=$((i + 1))
+            done
+            target_slot=$(( $(hex_byte "$(derive_hex level2-target-slot)" 0) % 5 ))
+            set -- $decoy_entries
+            level2_roster=; i=0
+            while [ "$i" -le 4 ]; do
+                if [ "$i" -eq "$target_slot" ]; then entry="$target:$TOKEN"; else entry=$1; shift; fi
+                level2_roster="${level2_roster}${level2_roster:+ }$entry"
+                i=$((i + 1))
+            done
+            conf LEVEL2_ROSTER "$level2_roster"
             write_level_readme "GRACEFUL SHUTDOWN
 The $target worker must be shut down cleanly. Identify it from its role and
 token=$TOKEN, then send the normal termination signal. Do not stop its peers.
@@ -317,7 +331,8 @@ Useful commands: ps, kill, kill -l."
             conf DISTRACTOR_ROLES "$(distractor_roles "$target" 3 level4-roster)"
             write_level_readme "PAUSE AND RESUME
 Temporarily stop $target, confirm its state becomes T and its heartbeat pauses,
-then continue it. It must be running when checked. Preserve its peers.
+leave it stopped for at least two seconds, then continue it. It must be running
+when checked. Preserve its peers.
 Useful commands: ps, kill, tail."
             ;;
         5)

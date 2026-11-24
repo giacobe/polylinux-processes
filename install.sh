@@ -70,6 +70,8 @@ wait "$smoke_pid" 2>/dev/null || true
 rm -rf "$smoke_dir"
 cp "$INSTALL_ROOT/startlevel.sh" /usr/lib/process-lab/startlevel.sh
 chmod 644 /usr/lib/process-lab/startlevel.sh
+cp "$INSTALL_ROOT/monitor-level4.sh" /usr/lib/process-lab/monitor-level4.sh
+chmod 755 /usr/lib/process-lab/monitor-level4.sh
 
 cp "$INSTALL_ROOT/polylinux-colors.sh" /etc/profile.d/polylinux-colors.sh
 chmod 644 /etc/profile.d/polylinux-colors.sh
@@ -78,6 +80,8 @@ for helper in nextlevel prevlevel levelstatus cleanlevel; do
     cp "$INSTALL_ROOT/$helper" "/usr/bin/$helper"
     chmod 755 "/usr/bin/$helper"
 done
+cp "$INSTALL_ROOT/validate" /usr/bin/process-validate
+chmod 755 /usr/bin/process-validate
 
 . "$INSTALL_ROOT/polylinux-parallel-runtime.sh"
 prepare_standard_accounts

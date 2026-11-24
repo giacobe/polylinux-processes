@@ -63,14 +63,21 @@ using a PID you wrote down earlier.
 current interactive shell; it is not a PID. The first letter of `STAT` is the
 state: `R` runnable, `S` sleeping, `T` stopped, or `Z` zombie.
 
+## Submission keys
+
+After completing each level, run `validate` and record its ten-character key.
+For Level 1, find the assigned process and run `validate PID` with its current
+PID. The command fingerprints what it observes; it does not say whether your
+work is correct. A separate grading form will compare your key with the
+expected key. Resetting a level gives its workers new PIDs.
+
 ## Level guidance
 
 ### Level 1: Process roll call
 
 The briefing gives a target role and token. `startlevel` launches that worker
 and four to seven distractors. Find the process whose arguments match both
-clues. Record its current `PID|PPID|STATE`, using only the first letter of
-`STAT`. PIDs change after a reset.
+clues. Run `validate PID` with its current PID. PIDs change after a reset.
 
 ### Level 2: Graceful shutdown
 
@@ -86,6 +93,7 @@ ignored, then send the required final signal. Preserve the other workers.
 ### Level 4: Pause and resume
 
 Stop the assigned heartbeat worker and confirm its state begins with `T`.
+Leave it stopped for at least two seconds so the observer records the state.
 Continue it with `CONT`, then confirm it is alive and no longer stopped.
 
 ### Level 5: Foreground and background jobs
@@ -135,7 +143,6 @@ failure, the image needs repair before the lab can run.
 
 ## Submitting work
 
-The lab page does not yet have a configured answer form. Keep your Level 1
-`PID|PPID|STATE` observation and the results requested by later briefings for
-your instructor. The terminal provides practice; it does not issue a graded
-completion result.
+The lab page does not yet have a configured answer form. Record the key printed
+by `validate` for each level and retain it for your instructor. The terminal
+does not issue a graded completion result.

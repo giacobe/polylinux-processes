@@ -1,0 +1,134 @@
+#!/bin/sh
+# Emit a PID-free fingerprint of the observed process state. This script has no
+# expected answer and never reports whether the learner's state is correct.
+set -eu
+
+level=${USER#level}
+case "$level" in 1|2|3|4|5|6|7|8|9|10) ;; *) echo 'Run validate in a level account.' >&2; exit 1 ;; esac
+case_file="/var/lib/process-lab/cases/level$level/case.conf"
+run="$HOME/runtime"
+[ -r "$case_file" ] && [ -r "$run/registry" ] || { echo 'Run startlevel first.' >&2; exit 1; }
+. "$case_file"
+
+state_of() {
+    pid=$1
+    if [ ! -r "/proc/$pid/stat" ]; then printf absent; return; fi
+    state=$(awk '{print $3}' "/proc/$pid/stat" 2>/dev/null || true)
+    case "$state" in T|t) printf stopped ;; Z|X|x|'') printf absent ;; *) printf alive ;; esac
+}
+
+pid_for() { awk -v role="$1" '$1 == role {print $2; exit}' "$run/registry"; }
+role_state() {
+    pid=$(pid_for "$1")
+    if [ -n "$pid" ]; then state_of "$pid"; else printf absent; fi
+}
+signal_event() {
+    [ -r "$run/events" ] || { printf none; return; }
+    awk -v role="$1" -v kind="$2" '$1 == role && $0 ~ kind {found=1} END {print found ? "yes" : "none"}' "$run/events"
+}
+receipt_signal() {
+    [ -r "$run/$RECEIPT" ] || { printf none; return; }
+    value=$(awk -v role="$TARGET" '$1 == "role=" role && /clean=yes/ {for(i=1;i<=NF;i++) if($i ~ /^signal=/) {sub(/^signal=/,"",$i); print $i; exit}}' "$run/$RECEIPT")
+    case "$value" in 15) printf TERM ;; 2) printf INT ;; 1) printf HUP ;; *) printf none ;; esac
+}
+nice_of() {
+    pid=$(pid_for "$1")
+    [ -n "$pid" ] && [ -r "/proc/$pid/stat" ] || { printf absent; return; }
+    awk '{print $19}' "/proc/$pid/stat" 2>/dev/null || printf absent
+}
+
+canonical() {
+    printf 'process-validate-v1 level=%s learner=%s date=%s\n' "$LEVEL" "$LEARNER_ID" "$EXERCISE_DATE"
+    case "$LEVEL" in
+        1)
+            selected=${1:-}
+            case "$selected" in *[!0-9]*|'') echo 'Level 1 usage: validate PID' >&2; return 2 ;; esac
+            selected_role=$(awk -v pid="$selected" '$2 == pid {print $1; exit}' "$run/registry")
+            if [ -n "$selected_role" ] && [ "$(state_of "$selected")" != absent ]; then
+                selected_token=$(tr '\000' ' ' < "/proc/$selected/cmdline" 2>/dev/null | awk '{print $5}')
+                printf 'selection role=%s token=%s\n' "$selected_role" "$selected_token"
+            else
+                printf 'selection role=unknown token=unknown\n'
+            fi
+            ;;
+        2)
+            printf 'target=%s status=%s receipt=%s term=%s\n' "$TARGET" "$(role_state "$TARGET")" "$(receipt_signal)" "$(signal_event "$TARGET" 'signal=15')"
+            for role in $DISTRACTOR_ROLES; do printf 'peer=%s status=%s\n' "$role" "$(role_state "$role")"; done | LC_ALL=C sort
+            ;;
+        3)
+            case "$IGNORED_SIGNAL" in TERM) ignored_num=15 ;; INT) ignored_num=2 ;; HUP) ignored_num=1 ;; esac
+            case "$REQUIRED_SIGNAL" in TERM) required_num=15 ;; KILL) required_num=9 ;; esac
+            if [ "$REQUIRED_SIGNAL" = KILL ]; then
+                final=$(signal_event "$TARGET" 'exit=137')
+            else
+                final=$(signal_event "$TARGET" "signal=$required_num")
+            fi
+            printf 'target=%s status=%s ignored=%s final=%s\n' "$TARGET" "$(role_state "$TARGET")" "$(signal_event "$TARGET" "ignored=$ignored_num")" "$final"
+            for role in $DISTRACTOR_ROLES; do printf 'peer=%s status=%s\n' "$role" "$(role_state "$role")"; done | LC_ALL=C sort
+            ;;
+        4)
+            transitions=none
+            if [ -r "$run/level4-transitions" ]; then
+                transitions=$(cat "$run/level4-transitions")
+            fi
+            printf 'target=%s status=%s transitions=%s cont=%s\n' "$TARGET" "$(role_state "$TARGET")" "$transitions" "$(signal_event "$TARGET" 'signal=CONT')"
+            for role in $DISTRACTOR_ROLES; do printf 'peer=%s status=%s\n' "$role" "$(role_state "$role")"; done | LC_ALL=C sort
+            ;;
+        5)
+            for role in "$JOB_A" "$JOB_B"; do
+                pid=$(pid_for "$role")
+                job=missing
+                if [ -n "$pid" ] && [ -r "$run/jobs-snapshot" ]; then
+                    job=$(awk -v pid="$pid" '$0 ~ ("(^|[[:space:]])" pid "([[:space:]]|$)") {if (/Stopped/) print "stopped"; else if (/Running/) print "background-running"; else print "other"; exit}' "$run/jobs-snapshot")
+                    job=${job:-missing}
+                fi
+                printf 'job=%s status=%s shell=%s\n' "$role" "$(role_state "$role")" "$job"
+            done | LC_ALL=C sort
+            ;;
+        6)
+            printf 'target=%s status=%s nice=%s\n' "$TARGET" "$(role_state "$TARGET")" "$(nice_of "$TARGET")"
+            for role in $DISTRACTOR_ROLES; do printf 'peer=%s status=%s nice=%s\n' "$role" "$(role_state "$role")" "$(nice_of "$role")"; done | LC_ALL=C sort
+            ;;
+        7)
+            printf 'parent=%s status=%s\n' "$PARENT" "$(role_state "$PARENT")"
+            for branch in "$TARGET_BRANCH" "$PROTECTED_BRANCH"; do
+                printf 'branch=%s status=%s\n' "$branch" "$(role_state "$branch")"
+                i=1; while [ "$i" -le "$CHILDREN" ]; do
+                    role="$branch-child$i"
+                    printf 'child=%s status=%s\n' "$role" "$(role_state "$role")"
+                    i=$((i+1))
+                done
+            done | LC_ALL=C sort
+            ;;
+        8)
+            printf 'supervisor=%s\n' "$(role_state group-supervisor)"
+            i=1; while [ "$i" -le "$STAGES" ]; do
+                for label in "$TARGET_GROUP" "$PROTECTED_GROUP"; do
+                    role="$label-member$i"
+                    printf 'member=%s status=%s term=%s\n' "$role" "$(role_state "$role")" "$(signal_event "$role" 'signal=15')"
+                done
+                i=$((i+1))
+            done | LC_ALL=C sort
+            ;;
+        9)
+            reap=none
+            [ -r "$run/events" ] && reap=$(awk -v parent="$PARENT" '$1 == parent && /reaped=/ {print "yes"; exit}' "$run/events")
+            printf 'parent=%s status=%s zombie=%s status=%s sibling=%s reap=%s\n' "$PARENT" "$(role_state "$PARENT")" "$ZOMBIE" "$(role_state "$ZOMBIE")" "$(role_state live-sibling)" "${reap:-none}"
+            ;;
+        10)
+            printf 'hog=%s status=%s nice=%s\n' "$HOG" "$(role_state "$HOG")" "$(nice_of "$HOG")"
+            printf 'paused=%s status=%s cont=%s\n' "$PAUSED" "$(role_state "$PAUSED")" "$(signal_event "$PAUSED" 'signal=CONT')"
+            printf 'stubborn=%s status=%s ignored=%s\n' "$STUBBORN" "$(role_state "$STUBBORN")" "$(signal_event "$STUBBORN" 'ignored=15')"
+            printf 'protected=%s status=%s\n' "$PROTECTED" "$(role_state "$PROTECTED")"
+            i=1; while [ "$i" -le 3 ]; do
+                role="$TARGET_GROUP-member$i"
+                printf 'member=%s status=%s term=%s\n' "$role" "$(role_state "$role")" "$(signal_event "$role" 'signal=15')"
+                i=$((i+1))
+            done | LC_ALL=C sort
+            ;;
+    esac
+}
+
+snapshot=$(canonical "${1:-}")
+code=$(printf '%s\n' "$snapshot" | sha256sum | cut -c 1-10)
+printf 'Your key is: %s\n' "$code"

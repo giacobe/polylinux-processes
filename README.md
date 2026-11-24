@@ -1,12 +1,9 @@
-# PolyLinux Processes and Job Control — Live-State Submission Edition
+# PolyLinux Processes and Job Control
 
 This package builds ten deterministic, live process-management exercises for
 the PolyLinux Buildroot image. Each learner receives different themes, service
-roles, process topology, distractors, and required values based on:
-
-```text
-SHA-256(email + ISO_date + exercise_password + level_password)
-```
+roles, process topology, distractors, and required values from the versioned
+`seed-v1` contract in `polylinux-common.sh`.
 
 Linux assigns PIDs and PGIDs when `startlevel` launches a fresh runtime. They
 are deliberately not derived from the seed and may change after every reset.
@@ -18,54 +15,38 @@ Each level begins with:
 ```sh
 cat README.txt
 startlevel
-ps -o pid,ppid,pgid,stat,ni,comm,args
+ps -ww -o pid,ppid,pgid,stat,ni,comm,args
 ```
 
-The learner inspects and manipulates the real processes, then runs
-`the external answer form`. Once the requested live state is correct, `submit` captures a
-canonical report from `/proc`, runtime events, and shutdown receipts.
-
-The report includes:
-
-- learner email and exercise date;
-- level, scenario theme, and launch identifier;
-- every registered process's PID, PPID, PGID, state, nice value, command, and
-  launch-token match;
-- signal events and graceful-shutdown receipts; and
-- a SHA-256 digest over the exact report bytes.
-
-The report is written to `~/submission-levelN.txt` and printed to the terminal.
-Level 1 uses:
+The learner inspects and manipulates the real processes, then runs `validate`.
+Level 1 takes the selected process's current PID:
 
 ```sh
-submit 'PID|PPID|STATE'
+validate PID
 ```
 
-Levels 2 through 10 use:
+Levels 2 through 10 take no argument:
 
 ```sh
-submit
+validate
 ```
 
-`verify-submission.sh` independently recomputes the digest, binds the report to
-the generated learner/date case, and checks the level-specific state
-requirements.
+`validate` prints a ten-character key for every observed state. It never
+reports correct or incorrect. The external grader derives expected keys from
+the seed; it is not included in the VM payload.
 
 ## Trust boundary
 
-The SHA-256 detects alteration of a captured report. It does not turn a
-learner-controlled offline VM into a trusted remote attestation device. A
-server-side verifier can validate the report's structure and semantics, but
-strong proof against a participant who rewrites the local client would require
-an external signing service or hardware-backed secret.
+The key fingerprints the learner-controlled offline VM's observed state. It
+is not a remote attestation or protection against deliberate client tampering.
 
 ## Installation
 
 Place the repository files in root's home directory and run:
 
 ```sh
-chmod +x install.sh level*.sh the external answer form cleanlevel levelstatus nextlevel \
-  prevlevel submit verify.sh verify-submission.sh
+chmod +x install.sh level*.sh cleanlevel levelstatus nextlevel prevlevel \
+  validate monitor-level4.sh verify.sh
 ./install.sh
 ```
 

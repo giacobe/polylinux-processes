@@ -10,15 +10,13 @@ mv nice passwd ps renice rm sed sha256sum sleep sort su tail tr wc
 Learners use:
 
 ```text
-ps top jobs fg bg kill nice renice grep awk tail
+ps top jobs fg bg kill nice renice grep awk tail validate
 ```
 
 The `ps` implementation must support:
 
 ```text
-ps -o pid,ppid,pgid,stat,ni,comm,args
-ps -o stat= -p PID
-ps -o ni= -p PID
+ps -ww -o pid,ppid,pgid,stat,ni,comm,args
 ```
 
 BusyBox builds should enable job control in `ash`, `top`, `renice`, and the

@@ -34,7 +34,8 @@ done
 for level in 1 2 3 4 5 6 7 8 9 10; do
     sh -n "./level$level.sh"
 done
-sh -n ./install.sh ./resources.sh ./polylinux-common.sh ./polylinux-parallel-runtime.sh
+sh -n ./install.sh ./resources.sh ./polylinux-common.sh ./polylinux-parallel-runtime.sh \
+    ./startlevel.sh ./monitor-level4.sh ./validate ./profile
 
 # Level 1 must identify one live target among distinct seeded decoys, with a
 # target position that varies across learners instead of always launching first.
@@ -69,6 +70,29 @@ for learner in student@example.edu learner2@example.edu learner3@example.edu; do
         done
         [ "$target_position" -gt 0 ]
         printf '%s\n' "$target_position" > "$case_dir/position"
+
+        levelnumber=2 levelToBuild=level2 levelPassword=levelPassword2
+        level_HASH=$(level_seed_v1)
+        LEVEL_HOME="$case_dir/home2"
+        export levelnumber levelToBuild levelPassword level_HASH LEVEL_HOME
+        mkdir -p "$LEVEL_HOME"
+        build_level 2
+        . "$CASE_ROOT/level2/case.conf"
+        set -- $LEVEL2_ROSTER
+        [ "$#" -eq 5 ]
+        seen='|'; target_count=0
+        for entry do
+            role=${entry%%:*}; token=${entry#*:}
+            case "$seen" in *"|$token|"*) exit 1 ;; esac
+            seen="$seen$token|"
+            if [ "$role" = "$TARGET" ]; then
+                [ "$token" = "$TOKEN" ]
+                target_count=$((target_count + 1))
+            else
+                [ "$token" != "$TOKEN" ]
+            fi
+        done
+        [ "$target_count" -eq 1 ]
     )
     position=$(cat "$case_dir/position")
     if [ -z "$first_position" ]; then

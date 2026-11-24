@@ -26,6 +26,16 @@ _pl_worker() {
         >>"$_pl_run/output" 2>&1 &
 }
 
+_pl_watched_worker() (
+    exec 3>>"$_pl_run/events"
+    "$_pl_helper" worker "$_pl_run" "$1" "$TOKEN" "$2" 1 receipt \
+        >>"$_pl_run/output" 2>&1 &
+    _pl_child=$!
+    wait "$_pl_child"
+    _pl_exit=$?
+    printf '%s exit=%s\n' "$1" "$_pl_exit" >&3
+)
+
 case "$LEVEL" in
     1)
         for _pl_entry in $LEVEL1_ROSTER; do
@@ -35,17 +45,21 @@ case "$LEVEL" in
         done
         ;;
     2)
-        _pl_worker "$TARGET" graceful 1 "$RECEIPT"
-        for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
+        for _pl_entry in $LEVEL2_ROSTER; do
+            _pl_label=${_pl_entry%%:*}
+            _pl_decoy_token=${_pl_entry#*:}
+            _pl_worker "$_pl_label" graceful 1 "$RECEIPT" "$_pl_decoy_token"
+        done
         ;;
     3)
         case "$IGNORED_SIGNAL" in TERM) _pl_mode=ignore-term ;; INT) _pl_mode=ignore-int ;; *) _pl_mode=ignore-hup ;; esac
-        _pl_worker "$TARGET" "$_pl_mode"
+        _pl_watched_worker "$TARGET" "$_pl_mode" &
         for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
         ;;
     4)
         _pl_worker "$TARGET" heartbeat "$INTERVAL"
         for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
+        /usr/lib/process-lab/monitor-level4.sh "$_pl_run" "$TARGET" >>"$_pl_run/output" 2>&1 &
         ;;
     5)
         _pl_worker "$JOB_A" normal
