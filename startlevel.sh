@@ -22,14 +22,17 @@ cp "$_pl_case" "$_pl_run/case.conf"
 _pl_helper=/usr/lib/process-lab/process-helper
 
 _pl_worker() {
-    "$_pl_helper" worker "$_pl_run" "$1" "$TOKEN" "$2" "${3:-1}" "${4:-receipt}" \
+    "$_pl_helper" worker "$_pl_run" "$1" "${5:-$TOKEN}" "$2" "${3:-1}" "${4:-receipt}" \
         >>"$_pl_run/output" 2>&1 &
 }
 
 case "$LEVEL" in
     1)
-        _pl_worker "$TARGET" normal
-        for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
+        for _pl_entry in $LEVEL1_ROSTER; do
+            _pl_label=${_pl_entry%%:*}
+            _pl_decoy_token=${_pl_entry#*:}
+            _pl_worker "$_pl_label" normal 1 receipt "$_pl_decoy_token"
+        done
         ;;
     2)
         _pl_worker "$TARGET" graceful 1 "$RECEIPT"
@@ -74,4 +77,4 @@ case "$LEVEL" in
 esac
 sleep 1
 echo "Level $LEVEL processes started. Use levelstatus to inspect the launch."
-unset _pl_level _pl_case _pl_run _pl_helper _pl_i _pl_label _pl_pid _pl_ppid _pl_pgid _pl_mode
+unset _pl_level _pl_case _pl_run _pl_helper _pl_i _pl_entry _pl_label _pl_decoy_token _pl_pid _pl_ppid _pl_pgid _pl_mode

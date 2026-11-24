@@ -257,7 +257,26 @@ build_level() {
         1)
             target=$(role_at 0); count="$((4 + $(hex_byte "$(derive_hex count)" 0) % 4))"
             conf TARGET "$target"; conf DISTRACTORS "$count"
-            conf DISTRACTOR_ROLES "$(distractor_roles "$target" "$count" level1-roster)"
+            decoy_roles=$(distractor_roles "$target" "$count" level1-roster)
+            conf DISTRACTOR_ROLES "$decoy_roles"
+            decoy_entries=; i=1
+            for decoy_role in $decoy_roles; do
+                decoy_entries="${decoy_entries}${decoy_entries:+ }$decoy_role:$(hex_fragment "decoy-fingerprint-$i" 10)"
+                i=$((i + 1))
+            done
+            target_slot=$(( $(hex_byte "$(derive_hex target-slot)" 0) % (count + 1) ))
+            set -- $decoy_entries
+            level1_roster=; i=0
+            while [ "$i" -le "$count" ]; do
+                if [ "$i" -eq "$target_slot" ]; then
+                    entry="$target:$TOKEN"
+                else
+                    entry=$1; shift
+                fi
+                level1_roster="${level1_roster}${level1_roster:+ }$entry"
+                i=$((i + 1))
+            done
+            conf LEVEL1_ROSTER "$level1_roster"
             conf REQUIRED_FIELDS "pid|ppid|state"
             write_level_readme "PROCESS ROLL CALL
 Locate the process whose command contains role=$target and token=$TOKEN.

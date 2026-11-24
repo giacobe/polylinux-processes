@@ -36,6 +36,50 @@ for level in 1 2 3 4 5 6 7 8 9 10; do
 done
 sh -n ./install.sh ./resources.sh ./polylinux-common.sh ./polylinux-parallel-runtime.sh
 
+# Level 1 must identify one live target among distinct seeded decoys, with a
+# target position that varies across learners instead of always launching first.
+first_position=; varied_position=0
+for learner in student@example.edu learner2@example.edu learner3@example.edu; do
+    case_dir=$(mktemp -d)
+    (
+        export INSTALL_ROOT=$PWD LAB_ID USER_ID="$learner" currentDate SYSTEM_PASSWORD
+        export CASE_ROOT="$case_dir/cases" LEVEL_HOME="$case_dir/home" SKIP_OWNERSHIP=1 THEME_INDEX=0
+        mkdir -p "$LEVEL_HOME"
+        levelnumber=1 levelToBuild=level1 levelPassword=levelPassword1
+        export levelnumber levelToBuild levelPassword
+        level_HASH=$(level_seed_v1)
+        export level_HASH
+        . ./resources.sh
+        build_level 1
+        . "$CASE_ROOT/level1/case.conf"
+        set -- $LEVEL1_ROSTER
+        [ "$#" -eq "$((DISTRACTORS + 1))" ]
+        seen='|'; target_position=0; position=1
+        for entry do
+            role=${entry%%:*}; token=${entry#*:}
+            case "$seen" in *"|$token|"*) exit 1 ;; esac
+            seen="$seen$token|"
+            if [ "$role" = "$TARGET" ]; then
+                [ "$token" = "$TOKEN" ]
+                target_position=$position
+            else
+                [ "$token" != "$TOKEN" ]
+            fi
+            position=$((position + 1))
+        done
+        [ "$target_position" -gt 0 ]
+        printf '%s\n' "$target_position" > "$case_dir/position"
+    )
+    position=$(cat "$case_dir/position")
+    if [ -z "$first_position" ]; then
+        first_position=$position
+    elif [ "$position" -ne "$first_position" ]; then
+        varied_position=1
+    fi
+    rm -rf "$case_dir"
+done
+[ "$varied_position" -eq 1 ]
+
 if grep -R -n -E 'record_answer|ANSWER_DIR|/answers|checklevel' . \
     --exclude-dir=.git --exclude-dir=provenance --exclude=README.md --exclude=LEVELS.md \
     --exclude=participant-guide.md --exclude=test.sh --exclude=verify.sh; then
