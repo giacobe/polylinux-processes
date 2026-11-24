@@ -29,11 +29,12 @@ Start or reset the current scenario, then inspect its processes:
 ```sh
 startlevel
 levelstatus
-ps -o pid,ppid,pgid,stat,comm,args
+ps -ww -o pid,ppid,pgid,stat,comm,args
 ```
 
-Keep the field names together after `-o`: spaces after the commas make the
-`ps` output list invalid. Match all the assigned clues before choosing a
+`-ww` keeps long command arguments visible in the narrow terminal. Keep the
+field names together after `-o`: spaces after the commas make the `ps` output
+list invalid. Match all the assigned clues before choosing a
 process. Use `grep` with a role or token from the briefing to narrow a list.
 
 ## Navigate and reset
@@ -47,7 +48,7 @@ using a PID you wrote down earlier.
 
 | Task | Command |
 | --- | --- |
-| Inspect processes | `ps -o pid,ppid,pgid,stat,comm,args` |
+| Inspect processes | `ps -ww -o pid,ppid,pgid,stat,comm,args` |
 | Watch CPU and nice values | `top` (press `q` to leave) |
 | Send normal termination | `kill -TERM PID` |
 | Stop or continue a process | `kill -STOP PID`, `kill -CONT PID` |

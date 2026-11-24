@@ -11,8 +11,7 @@ box_line() { printf '* %-36.36s *\n' "$1"; }
 echo '****************************************'
 box_line 'PolyLinux: Processes/Job Control'
 box_line 'Read README, then run startlevel.'
-box_line 'Submit answers to the exercise'
-box_line 'grading form.'
+box_line 'Record your process observations.'
 box_line 'Use nextlevel and prevlevel.'
 echo '****************************************'
 cat README.txt

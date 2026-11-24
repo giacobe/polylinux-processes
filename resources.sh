@@ -97,8 +97,11 @@ write_level_readme() {
         printf '%s\n' "$1"
         echo
         echo "Run 'startlevel' to create or reset this level's processes."
-        echo "Submit the requested answer through the external answer form."
-        echo "Level 1 answer format: PID|PPID|STATE."
+        if [ "$levelnumber" -eq 1 ]; then
+            echo "Record the target's current PID|PPID|STATE."
+        else
+            echo "Record the observations requested above."
+        fi
         echo "Run 'levelstatus' for the current process identifiers and launch status."
     } > "$LEVEL_HOME/README.txt"
 }
@@ -258,7 +261,7 @@ build_level() {
             conf REQUIRED_FIELDS "pid|ppid|state"
             write_level_readme "PROCESS ROLL CALL
 Locate the process whose command contains role=$target and token=$TOKEN.
-Submit its live PID, PPID, and one-letter process state:
+Record its live PID, PPID, and one-letter process state:
     PID|PPID|STATE
 Useful commands: ps, grep."
             ;;
@@ -306,7 +309,7 @@ Useful commands: ps, kill, tail."
             write_level_readme "FOREGROUND AND BACKGROUND JOBS
 startlevel launches $a and $b as jobs in your current interactive shell.
 Use jobs to inspect them. Stop $a and leave it stopped; leave $b running in
-the background. Record the requested states for the external answer form.
+the background. Record the requested states.
 Useful commands: jobs, fg, Ctrl-Z, bg, kill."
             ;;
         6)

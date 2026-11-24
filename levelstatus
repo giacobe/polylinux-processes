@@ -5,4 +5,4 @@ if [ ! -f "$run/registry" ]; then
     exit 1
 fi
 echo "Current processes:"
-ps -o pid,ppid,pgid,stat,ni,comm,args 2>/dev/null || ps
+ps -ww -o pid,ppid,pgid,stat,ni,comm,args 2>/dev/null || ps
