@@ -55,6 +55,19 @@ if [ -f "$INSTALL_ROOT/process-helper" ]; then
 else
     die "prebuilt process-helper is missing from the exercise payload"
 fi
+smoke_dir="/run/process-lab-helper-smoke.$$"
+mkdir -p "$smoke_dir"
+/usr/lib/process-lab/process-helper worker "$smoke_dir" smoke smoke normal 1 receipt \
+    >"$smoke_dir/output" 2>&1 &
+smoke_pid=$!
+sleep 1
+if ! kill -0 "$smoke_pid" 2>/dev/null || ! grep -q '^smoke ' "$smoke_dir/registry" 2>/dev/null; then
+    wait "$smoke_pid" 2>/dev/null || true
+    die "process-helper failed its startup smoke test; see $smoke_dir/output"
+fi
+kill "$smoke_pid" 2>/dev/null || true
+wait "$smoke_pid" 2>/dev/null || true
+rm -rf "$smoke_dir"
 cp "$INSTALL_ROOT/startlevel.sh" /usr/lib/process-lab/startlevel.sh
 chmod 644 /usr/lib/process-lab/startlevel.sh
 

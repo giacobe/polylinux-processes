@@ -21,11 +21,15 @@ if [ -z "$TARGET_CC" ] || [ ! -x "$TARGET_CC" ]; then
     exit 1
 fi
 
+if [ ! -x "$BUILD_OUTPUT/target/lib/ld-linux.so.2" ]; then
+    echo "The selected Buildroot target lacks the 32-bit glibc loader." >&2
+    exit 1
+fi
+
 echo "Cross-compiling with $TARGET_CC"
 
 "$TARGET_CC" \
     -Os \
-    -static \
     -Wall \
     -Wextra \
     -o "$SCRIPT_DIR/process-helper" \
