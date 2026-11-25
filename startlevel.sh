@@ -26,10 +26,19 @@ _pl_worker() {
         >>"$_pl_run/output" 2>&1 &
 }
 
+_pl_hidden_worker() {
+    "$_pl_helper" worker "$_pl_run" "$1" "$TOKEN" - 1 receipt \
+        >>"$_pl_run/output" 2>&1 <<EOF &
+$2
+EOF
+}
+
 _pl_watched_worker() (
     exec 3>>"$_pl_run/events"
-    "$_pl_helper" worker "$_pl_run" "$1" "$TOKEN" "$2" 1 receipt \
-        >>"$_pl_run/output" 2>&1 &
+    "$_pl_helper" worker "$_pl_run" "$1" "$TOKEN" - 1 receipt \
+        >>"$_pl_run/output" 2>&1 <<EOF &
+$2
+EOF
     _pl_child=$!
     wait "$_pl_child"
     _pl_exit=$?
@@ -54,7 +63,7 @@ case "$LEVEL" in
     3)
         case "$IGNORED_SIGNAL" in TERM) _pl_mode=ignore-term ;; INT) _pl_mode=ignore-int ;; *) _pl_mode=ignore-hup ;; esac
         _pl_watched_worker "$TARGET" "$_pl_mode" &
-        for _pl_label in $DISTRACTOR_ROLES; do _pl_worker "$_pl_label" normal; done
+        for _pl_label in $DISTRACTOR_ROLES; do _pl_hidden_worker "$_pl_label" normal; done
         ;;
     4)
         _pl_worker "$TARGET" heartbeat "$INTERVAL"
@@ -79,10 +88,10 @@ case "$LEVEL" in
         "$_pl_helper" zombie "$_pl_run" "$PARENT" "$ZOMBIE" "$CONTROL_SIGNAL" "$TOKEN" >>"$_pl_run/output" 2>&1 &
         ;;
     10)
-        _pl_worker "$HOG" cpu
-        _pl_worker "$PAUSED" normal
-        _pl_worker "$STUBBORN" ignore-term
-        _pl_worker "$PROTECTED" normal
+        _pl_hidden_worker "$HOG" cpu
+        _pl_hidden_worker "$PAUSED" normal
+        _pl_hidden_worker "$STUBBORN" ignore-term
+        _pl_hidden_worker "$PROTECTED" normal
         "$_pl_helper" groups "$_pl_run" "$TARGET_GROUP" "protected-group" 3 "$TOKEN" >>"$_pl_run/output" 2>&1 &
         sleep 1
         _pl_pid=$(awk -v n="$PAUSED" '$1==n {print $2; exit}' "$_pl_run/registry")

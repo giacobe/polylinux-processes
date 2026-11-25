@@ -201,6 +201,7 @@ static int zombie_mode(int argc, char **argv) {
 
 int main(int argc, char **argv) {
     const char *mode;
+    char hidden_mode[32];
     int interval = 1;
     if (argc < 2) return 2;
     if (!strcmp(argv[1], "tree")) return tree_mode(argc, argv);
@@ -208,6 +209,15 @@ int main(int argc, char **argv) {
     if (!strcmp(argv[1], "zombie")) return zombie_mode(argc, argv);
     if (argc < 6 || strcmp(argv[1], "worker")) return 2;
     run_dir = argv[2]; role = argv[3]; mode = argv[5];
+    if (!strcmp(mode, "-")) {
+        if (!fgets(hidden_mode, sizeof(hidden_mode), stdin)) return 2;
+        hidden_mode[strcspn(hidden_mode, "\r\n")] = '\0';
+        if (strcmp(hidden_mode, "normal") && strcmp(hidden_mode, "cpu") &&
+            strcmp(hidden_mode, "ignore-term") && strcmp(hidden_mode, "ignore-int") &&
+            strcmp(hidden_mode, "ignore-hup")) return 2;
+        mode = hidden_mode;
+        fclose(stdin);
+    }
     if (argc > 6) interval = atoi(argv[6]);
     if (argc > 7) receipt_name = argv[7];
     identify(role);
