@@ -18,6 +18,7 @@ Useful commands include:
 | Inspect processes | `ps -ww -o pid,ppid,pgid,stat,ni,comm,args` |
 | Watch activity | `top` |
 | Send normal termination | `kill PID` |
+| Send a hangup signal | `kill -HUP PID` |
 | Send a named signal | `kill -SIGNAL PID` |
 | Signal a process group | `kill -TERM -- -PGID` |
 | Inspect shell jobs | `jobs` |
@@ -25,7 +26,7 @@ Useful commands include:
 | Bring a job forward | `fg %N` |
 | Change priority | `renice VALUE -p PID` |
 | Reset the case | `startlevel` |
-| Check the result | `the external answer form` |
+| Generate a submission key | `validate` (Level 1: `validate PID`) |
 
 Do not use broad commands such as `killall sh`. Each case includes protected
 processes, and only processes belonging to the exercise are in scope.
@@ -39,3 +40,8 @@ Process state letters used in the lab include:
 
 PIDs change whenever a level is reset. Identify processes from their role,
 token, parent, group, and observed behavior rather than memorizing numbers.
+HUP means hangup, originally a disconnected terminal. Plain `kill PID` sends
+TERM; `kill -9 PID` sends KILL, which cannot be caught for graceful cleanup.
+In Level 3, send the first signal named in your briefing, confirm the target
+survives, then send the required final signal. A key from `validate` does not
+mean the external grader will accept the result.

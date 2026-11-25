@@ -316,12 +316,23 @@ Useful commands: ps, kill."
                 1) ignored=INT; required=TERM ;;
                 *) ignored=HUP; required=TERM ;;
             esac
+            case "$ignored" in
+                HUP) signal_note="HUP means hangup; it originally reported a disconnected terminal.
+Plain 'kill PID' sends TERM instead, so it skips this HUP test." ;;
+                INT) signal_note="INT means interrupt. Plain 'kill PID' sends TERM instead,
+so it skips this INT test." ;;
+                TERM) signal_note="TERM requests a normal shutdown. Plain 'kill PID' sends TERM,
+so it can be used for this first test." ;;
+            esac
             conf TARGET "$target"; conf IGNORED_SIGNAL "$ignored"; conf REQUIRED_SIGNAL "$required"; conf DISTRACTORS 4
             conf DISTRACTOR_ROLES "$(distractor_roles "$target" 4 level3-roster)"
             write_level_readme "THE STUBBORN WORKER
-The $target worker ignores $ignored. Stop that worker while preserving all
-peers. The required final escalation is $required. Verify that an ordinary
-signal worked or failed before escalating.
+The $target worker ignores $ignored. Find its current PID with ps. Send
+'kill -$ignored PID' first, then check with ps that it is still alive.
+Next send 'kill -$required PID' and confirm it exits. Preserve every peer.
+$signal_note
+'kill -9 PID' sends KILL, which cannot be handled for a clean shutdown.
+Use KILL only when it is the required final signal, after the first test.
 Useful commands: ps, kill, kill -l."
             ;;
         4)

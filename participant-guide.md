@@ -50,6 +50,7 @@ using a PID you wrote down earlier.
 | Inspect processes | `ps -ww -o pid,ppid,pgid,stat,ni,comm,args` |
 | Watch CPU and nice values | `top` (press `q` to leave) |
 | Send normal termination | `kill -TERM PID` |
+| Send a hangup signal | `kill -HUP PID` |
 | Stop or continue a process | `kill -STOP PID`, `kill -CONT PID` |
 | Signal one process group | `kill -TERM -- -PGID` |
 | Inspect jobs in your shell | `jobs -l` |
@@ -86,8 +87,18 @@ process list again.
 
 ### Level 3: The stubborn worker
 
-Test the signal named in the briefing on the target. Confirm whether it was
-ignored, then send the required final signal. Preserve the other workers.
+HUP means "hangup"; it originally indicated that a terminal connection had
+closed. If your briefing says the worker ignores HUP, send `kill -HUP PID`
+to its current PID, then use `ps` to confirm it is still alive. Send the
+briefing's required final signal and check that it exits. Other learners may
+receive an `INT` or `TERM` variant; follow the signal sequence in your own
+briefing and preserve the other workers.
+
+Plain `kill PID` sends `TERM`, so it skips a required HUP or INT test.
+`kill -9 PID` sends `KILL`, which the worker cannot catch or handle for a
+clean shutdown. Use it only when your briefing requires KILL after the first
+signal test. `validate` returns a key even if you skipped a required step;
+the external grader determines whether that key matches the expected state.
 
 ### Level 4: Pause and resume
 
