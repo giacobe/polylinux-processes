@@ -76,7 +76,8 @@ chmod 755 /usr/lib/process-lab/monitor-level4.sh
 cp "$INSTALL_ROOT/polylinux-colors.sh" /etc/profile.d/polylinux-colors.sh
 chmod 644 /etc/profile.d/polylinux-colors.sh
 cp "$INSTALL_ROOT/profile" /etc/profile
-for helper in nextlevel prevlevel levelstatus cleanlevel; do
+rm -f /usr/bin/levelstatus
+for helper in nextlevel prevlevel cleanlevel; do
     cp "$INSTALL_ROOT/$helper" "/usr/bin/$helper"
     chmod 755 "/usr/bin/$helper"
 done

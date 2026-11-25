@@ -8,14 +8,14 @@ Begin each level with:
 ```sh
 cat README.txt
 startlevel
-ps -o pid,ppid,pgid,stat,ni,comm,args
+ps -ww -o pid,ppid,pgid,stat,ni,comm,args
 ```
 
 Useful commands include:
 
 | Task | Command |
 |---|---|
-| Inspect processes | `ps -o pid,ppid,pgid,stat,ni,comm,args` |
+| Inspect processes | `ps -ww -o pid,ppid,pgid,stat,ni,comm,args` |
 | Watch activity | `top` |
 | Send normal termination | `kill PID` |
 | Send a named signal | `kill -SIGNAL PID` |

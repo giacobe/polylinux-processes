@@ -28,8 +28,7 @@ Start or reset the current scenario, then inspect its processes:
 
 ```sh
 startlevel
-levelstatus
-ps -ww -o pid,ppid,pgid,stat,comm,args
+ps -ww -o pid,ppid,pgid,stat,ni,comm,args
 ```
 
 `-ww` keeps long command arguments visible in the narrow terminal. Keep the
@@ -48,7 +47,7 @@ using a PID you wrote down earlier.
 
 | Task | Command |
 | --- | --- |
-| Inspect processes | `ps -ww -o pid,ppid,pgid,stat,comm,args` |
+| Inspect processes | `ps -ww -o pid,ppid,pgid,stat,ni,comm,args` |
 | Watch CPU and nice values | `top` (press `q` to leave) |
 | Send normal termination | `kill -TERM PID` |
 | Stop or continue a process | `kill -STOP PID`, `kill -CONT PID` |
@@ -136,7 +135,7 @@ such as `killall sh` or `pkill process-helper`. Never signal PID 1 or an
 unrelated system process. Prefer `TERM` before `KILL` when the briefing calls
 for escalation.
 
-If `levelstatus` says no processes have launched, run `startlevel`. If a PID
+If the expected workers are absent from `ps`, run `startlevel`. If a PID
 from your notes is missing, reset or level navigation may have replaced it;
 inspect the current listing. If installation reports a helper smoke-test
 failure, the image needs repair before the lab can run.

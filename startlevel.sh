@@ -90,5 +90,5 @@ case "$LEVEL" in
         ;;
 esac
 sleep 1
-echo "Level $LEVEL processes started. Use levelstatus to inspect the launch."
+echo "Level $LEVEL processes started. Inspect them with ps -ww -o pid,ppid,pgid,stat,ni,comm,args."
 unset _pl_level _pl_case _pl_run _pl_helper _pl_i _pl_entry _pl_label _pl_decoy_token _pl_pid _pl_ppid _pl_pgid _pl_mode

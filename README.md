@@ -45,7 +45,7 @@ is not a remote attestation or protection against deliberate client tampering.
 Place the repository files in root's home directory and run:
 
 ```sh
-chmod +x install.sh level*.sh cleanlevel levelstatus nextlevel prevlevel \
+chmod +x install.sh level*.sh cleanlevel nextlevel prevlevel \
   validate monitor-level4.sh verify.sh
 ./install.sh
 ```

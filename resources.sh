@@ -102,7 +102,7 @@ write_level_readme() {
         else
             echo "When finished, run 'validate' and record the printed key."
         fi
-        echo "Run 'levelstatus' for the current process identifiers and launch status."
+        echo "Inspect the current processes with 'ps -ww -o pid,ppid,pgid,stat,ni,comm,args'."
     } > "$LEVEL_HOME/README.txt"
 }
 
