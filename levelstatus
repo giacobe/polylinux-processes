@@ -1,8 +1,0 @@
-#!/bin/sh
-run="$HOME/runtime"
-if [ ! -f "$run/registry" ]; then
-    echo "No processes have been launched. Run startlevel."
-    exit 1
-fi
-echo "Current processes:"
-ps -ww -o pid,ppid,pgid,stat,ni,comm,args 2>/dev/null || ps
